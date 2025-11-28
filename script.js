@@ -35,8 +35,8 @@ const CARETAKER_MOOD = 'coffee';
 const CARETAKER_THRESHOLD = 40; 
 const AUTOMATIC_WORK_CHANCE = 0.15; 
 const AUTOMATIC_DATING_CHANCE = 0.05; 
-const PARTY_COST = 150; // ADDED CONSTANT
-const PARTY_HAPPINESS_BONUS = 30; // ADDED CONSTANT
+const PARTY_COST = 150; 
+const PARTY_HAPPINESS_BONUS = 30; 
 const SAVINGS_INTEREST_RATE = 0.01; 
 
 // --- Skill & Job Constants ---
@@ -119,10 +119,34 @@ const RESEARCH_DEFINITIONS = {
 };
 
 const GOAL_DEFINITIONS = [
-    { text: "Help 3 Miis reach 100% Happiness.", check: (mii) => mii.happiness >= 99, count: 3, reward: 200 },
-    { text: "Successfully date/marry 1 Mii.", check: (mii) => mii.relationship.status !== 'single', count: 1, reward: 500 },
-    { text: "Have 5 Miis sleeping at once.", check: (mii) => mii.isSleeping, count: 5, reward: 150 },
-    { text: "Achieve a total Mii Skill of 500.", check: (mii) => mii.skill, count: 500, reward: 750 },
+    { 
+        text: "Help 3 Miis reach 100% Happiness.", 
+        check: (mii) => mii.happiness >= 99, 
+        count: 3, 
+        reward: 200,
+        type: 'count_match' // Fixed for goal check
+    },
+    { 
+        text: "Successfully date/marry 1 Mii.", 
+        check: (mii) => mii.relationship.status !== 'single', 
+        count: 1, 
+        reward: 500,
+        type: 'count_match' // Fixed for goal check
+    },
+    { 
+        text: "Have 5 Miis sleeping at once.", 
+        check: (mii) => mii.isSleeping, 
+        count: 5, 
+        reward: 150,
+        type: 'count_match' // Fixed for goal check
+    },
+    { 
+        text: "Achieve a total Mii Skill of 500.", 
+        check: (mii) => mii.skill, 
+        count: 500, 
+        reward: 750,
+        type: 'aggregate_skill' // Fixed for goal check
+    },
 ];
 
 // --- Item Definitions ---
@@ -423,10 +447,12 @@ function renderGoals() {
         if (goal.completed) listItem.classList.add('completed');
         
         let progress = 0;
-        if (goal.check.name.includes('happiness') || goal.check.name.includes('dating') || goal.check.name.includes('sleeping')) {
-             progress = miiList.filter(mii => goal.check(mii)).length;
-        } else if (goal.check.name.includes('skill')) {
+        
+        // Use the explicit type property for reliable checking
+        if (goal.type === 'aggregate_skill') {
              progress = miiList.reduce((sum, mii) => sum + mii.skill, 0);
+        } else if (goal.type === 'count_match') { 
+             progress = miiList.filter(mii => goal.check(mii)).length;
         }
 
         const progressText = goal.completed 
@@ -1109,7 +1135,8 @@ function handleRandomEvents(activeMiis) {
         gameData.activeEvent.ticksRemaining -= 1;
         
         if (gameData.activeEvent.ticksRemaining <= 0) {
-            const eventDef = RANDOM_EVENTS[gameData.activeEvent.key];
+            // Check the event definition BEFORE setting activeEvent to null
+            const eventDef = RANDOM_EVENTS[gameData.activeEvent.key]; 
             miiMessage.textContent = `✅ ${eventDef.name} has concluded.`;
             
             if (gameData.activeEvent.key === 'illness_outbreak') {
@@ -1365,10 +1392,11 @@ function checkGoals() {
 
         let currentProgress = 0;
         
-        if (goal.check.name.includes('skill')) {
+        // FIX for Uncaught TypeError: Cannot read properties of undefined (reading 'name')
+        if (goal.type === 'aggregate_skill') {
             // Aggregate check for skill total
              currentProgress = miiList.reduce((sum, mii) => sum + mii.skill, 0);
-        } else {
+        } else if (goal.type === 'count_match') {
              // Check individual Miis for boolean/count based goals
             currentProgress = miiList.filter(mii => goal.check(mii)).length;
         }
