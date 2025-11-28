@@ -3,15 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mii Life Simulator</title>
+    <title>Mii Town Simulator</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
-        <h1>✨ Mii Life on Maple Island ✨</h1>
+        <h1>🏘️ Mii Town on Maple Island 🏘️</h1>
         
         <div id="creation-screen" class="screen">
-            <h2>Create Your Mii</h2>
+            <h2>Create Your First Mii</h2>
+            <p>You need at least one Mii to start your town.</p>
             <label for="mii-name-input">Mii Name:</label>
             <input type="text" id="mii-name-input" placeholder="e.g., Tom, Amy, Bob" maxlength="15">
             <label for="mii-personality-select">Personality:</label>
@@ -21,13 +22,21 @@
                 <option value="laid-back">Laid-back</option>
                 <option value="stubborn">Stubborn</option>
             </select>
-            <button onclick="createMii()">Start Life</button>
+            <button onclick="addMiiToTown()">Add Mii to Town</button>
+            <hr>
+            <p>Current Residents: <span id="resident-count">0</span></p>
+            <button onclick="startGame()" id="start-town-button" disabled>Start Town Life (Requires 1+ Mii)</button>
         </div>
 
         <div id="game-screen" class="screen hidden">
             <div class="header-bar">
                 <p>💰 Money: <span id="money-stat">0</span></p>
                 <button onclick="workForMoney()">💼 Work (+$10)</button>
+            </div>
+
+            <div class="mii-selector">
+                <label for="mii-select">Current Resident:</label>
+                <select id="mii-select" onchange="switchMii()"></select>
             </div>
 
             <div class="mii-card">
@@ -61,10 +70,11 @@
             <div class="actions">
                 <button onclick="openStore()">🛒 Maple Store</button>
                 <button onclick="toggleSleep()" id="sleep-button">🛌 Go to Sleep</button>
+                <button onclick="openNewMiiCreation()">➕ New Resident</button>
             </div>
             
             <div class="inventory-area">
-                <h3>🎒 Inventory (Click to use)</h3>
+                <h3>🎒 Inventory (Click to use on current Mii)</h3>
                 <div id="inventory-list" class="inventory-grid">
                     </div>
             </div>
@@ -83,6 +93,23 @@
                 <div id="store-items" class="store-grid">
                     </div>
                 <button onclick="closeStore()">Close Store</button>
+            </div>
+        </div>
+        
+        <div id="new-mii-modal" class="modal hidden">
+            <div class="modal-content">
+                <h2>Create New Resident</h2>
+                <label for="new-mii-name-input">Mii Name:</label>
+                <input type="text" id="new-mii-name-input" placeholder="e.g., Jane, Alex" maxlength="15">
+                <label for="new-mii-personality-select">Personality:</label>
+                <select id="new-mii-personality-select">
+                    <option value="easygoing">Easygoing</option>
+                    <option value="energetic">Energetic</option>
+                    <option value="laid-back">Laid-back</option>
+                    <option value="stubborn">Stubborn</option>
+                </select>
+                <button onclick="addNewMii()">Add to Town</button>
+                <button onclick="closeNewMiiModal()">Cancel</button>
             </div>
         </div>
 
