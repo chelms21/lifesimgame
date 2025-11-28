@@ -3,82 +3,45 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Mii Town on Maple Island</title>
+  <title>Maple Mii Town — Demo</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <div class="app">
     <main class="game-card" role="main" aria-labelledby="game-title">
+
       <header class="card-header">
-        <h1 id="game-title">Mii Town on Maple Island</h1>
+        <h1 id="game-title">Maple Mii Town</h1>
         <div class="header-controls">
-          <label>Game Mode:
-            <select id="game-mode-select">
-              <option value="manual">Manual</option>
-              <option value="automatic">Automatic</option>
-            </select>
-          </label>
-          <label>Difficulty:
-            <select id="game-difficulty-select">
-              <option value="normal">Normal</option>
-              <option value="easy">Easy</option>
-            </select>
-          </label>
-          <button id="start-town-button" class="btn" onclick="startGame()" disabled>Start Town Life (Requires 1+ Mii)</button>
+          <select id="game-mode-select" title="Game mode">
+            <option value="manual">Manual</option>
+            <option value="auto">Automatic</option>
+          </select>
+          <button id="save-btn" class="btn secondary">Save</button>
+          <button id="reset-btn" class="btn secondary">Reset</button>
         </div>
       </header>
 
+      <!-- LEFT COLUMN (avatar + stats + creation) -->
       <div class="left-col">
-        <section class="creation" id="creation-screen">
-          <h2>Create Your First Mii</h2>
-          <div class="form-row">
-            <input id="mii-name-input" placeholder="Mii Name" />
-            <select id="mii-gender-select">
-              <option value="male">Male ♂️</option>
-              <option value="female">Female ♀️</option>
-            </select>
-            <select id="mii-personality-select">
-              <option value="easygoing">Easygoing</option>
-              <option value="energetic">Energetic</option>
-              <option value="laid-back">Laid-back</option>
-              <option value="stubborn">Stubborn</option>
-            </select>
-            <button class="btn" onclick="addMiiToTown()">Add Mii to Town</button>
-          </div>
-
-          <hr>
-          <div class="creation-status">
-            <div>Current Residents: <span id="resident-count">0</span></div>
-            <div>Money: <span id="money-stat">0</span></div>
-            <div class="controls-row">
-              <button class="btn" onclick="gameData.money += 10; renderMoney(); saveGame();">Work (+$10)</button>
-              <button class="btn secondary" onclick="openInvestmentModal()">Invest</button>
-              <button class="btn secondary" onclick="openBankModal()">Bank Savings</button>
-              <button id="party-button" class="btn" onclick="(gameData.money >= PARTY_COST) && (gameData.money -= PARTY_COST, miiList.forEach(m=>m.happiness=Math.min(100,m.happiness+PARTY_HAPPINESS_BONUS)), renderCurrentMiiState(), renderMoney(), saveGame())">Throw Party (150)</button>
-            </div>
-          </div>
-        </section>
-
-        <section class="left-info">
-          <div class="mii-wrap">
-            <div class="mii-avatar" aria-hidden="true">
-              <!-- script.js manipulates classes on .mii-avatar -->
-              <img class="mii-img" src="assets/mii-placeholder.png" alt="Mii avatar">
-            </div>
+        <section class="mii-area">
+          <div class="mii-wrap" id="mii-wrap" aria-hidden="true">
+            <!-- Inline SVG placeholder avatar -->
+            <div id="mii-avatar" class="avatar-svg"></div>
           </div>
 
           <div class="stats">
             <div class="stat">
               <div class="label">Name</div>
-              <div id="mii-name" class="value">No Active Resident</div>
+              <div id="mii-name" class="value">—</div>
             </div>
             <div class="stat">
               <div class="label">Happiness</div>
-              <div id="happiness-stat" class="value">---</div>
+              <div id="happiness-stat" class="value">—</div>
             </div>
             <div class="stat">
               <div class="label">Hunger</div>
-              <div id="hunger-stat" class="value">---</div>
+              <div id="hunger-stat" class="value">—</div>
             </div>
           </div>
 
@@ -90,124 +53,67 @@
             <div class="bar-track"><div id="hunger-bar" class="bar-fill" style="width:0%"></div></div>
           </div>
 
-          <div class="caretaker">
-            Caretaker Status: <span id="caretaker-status">Inactive</span>
-          </div>
+        </section>
 
+        <section class="create-area">
+          <h2>Create a Mii</h2>
+          <div class="form-row">
+            <input id="mii-name-input" placeholder="Name" />
+            <select id="mii-gender-select">
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+            </select>
+            <select id="mii-personality-select">
+              <option value="easygoing">Easygoing</option>
+              <option value="energetic">Energetic</option>
+              <option value="laid-back">Laid-back</option>
+              <option value="stubborn">Stubborn</option>
+            </select>
+            <button id="create-mii-btn" class="btn">Add</button>
+          </div>
+          <div class="creation-status">
+            Residents: <span id="resident-count">0</span>
+            &nbsp;•&nbsp; Money: $<span id="money-stat">0</span>
+          </div>
         </section>
       </div>
 
+      <!-- RIGHT COLUMN (dialog, inventory, residents) -->
       <div class="right-col">
         <section class="dialog">
-          <div class="dialog-left">
-            <div id="mii-message">Welcome — create a Mii to start.</div>
-            <div id="save-message" class="save-msg"></div>
-          </div>
-
-          <div class="dialog-right">
-            <div id="mii-request-box" class="request-box hidden">
-              Requested item: <strong id="requested-item-name"></strong>
-            </div>
-
-            <div class="controls">
-              <select id="mii-select" onchange="switchMii()" aria-label="Select resident"></select>
-              <button class="btn" onclick="openNewMiiCreation()">➕ New Resident</button>
-              <button class="btn secondary" onclick="openStore()">Maple Store</button>
-              <button class="btn secondary" onclick="openRelationshipModal()">Relationships</button>
-              <button id="sleep-button" class="btn" onclick="toggleSleep && toggleSleep()">Go to Sleep</button>
-            </div>
+          <div id="mii-message" class="dialog-text">Welcome to Maple Mii Town — create a Mii to begin.</div>
+          <div class="dialog-controls">
+            <select id="mii-select" aria-label="Select resident"></select>
+            <button id="feed-btn" class="btn">Feed</button>
+            <button id="play-btn" class="btn">Play</button>
+            <button id="shop-open-btn" class="btn secondary">Store</button>
+            <button id="party-btn" class="btn" title="Throw party (+150)">$ Party</button>
           </div>
         </section>
 
         <section class="inventory-panel">
-          <h3>Inventory (Click to use)</h3>
+          <h3>Inventory</h3>
           <div id="inventory-list" class="inventory-list"></div>
-          <div class="store-controls">
-            <button class="btn secondary" onclick="saveGame()">Save Game</button>
-            <button class="btn secondary" onclick="resetGame()">Reset Game</button>
-          </div>
         </section>
 
         <section class="resident-list">
           <h3>Town Residents</h3>
           <div id="resident-list"></div>
         </section>
-
       </div>
 
-      <!-- Hidden modals (script.js expects these IDs) -->
+      <!-- simple store modal -->
       <div id="store-modal" class="modal hidden" aria-hidden="true">
         <div class="modal-inner">
-          <button class="modal-close" onclick="closeStore()">Close Store</button>
-          <h3>Maple Store — Current Money: <span id="store-money">0</span></h3>
+          <button class="modal-close" id="store-close-btn">Close</button>
+          <h3>Maple Shop</h3>
           <div id="store-items" class="store-items"></div>
-        </div>
-      </div>
-
-      <div id="new-mii-modal" class="modal hidden" aria-hidden="true">
-        <div class="modal-inner">
-          <h3>Create New Resident</h3>
-          <input id="new-mii-name-input" placeholder="Name" />
-          <select id="new-mii-gender-select">
-            <option value="male">Male ♂️</option>
-            <option value="female">Female ♀️</option>
-          </select>
-          <select id="new-mii-personality-select">
-            <option value="easygoing">Easygoing</option>
-            <option value="energetic">Energetic</option>
-            <option value="laid-back">Laid-back</option>
-            <option value="stubborn">Stubborn</option>
-          </select>
-          <div class="modal-actions">
-            <button class="btn" onclick="addNewMii()">Add to Town</button>
-            <button class="btn secondary" onclick="closeNewMiiModal()">Cancel</button>
-          </div>
-        </div>
-      </div>
-
-      <div id="investment-modal" class="modal hidden" aria-hidden="true">
-        <div class="modal-inner">
-          <h3>Town Investment Fund</h3>
-          <div>Current Funds: <span id="investment-total">0</span></div>
-          <div>Passive Income/tick: <span id="investment-rate">0</span></div>
-          <input id="investment-amount" type="number" min="10" />
-          <div class="modal-actions">
-            <button class="btn" onclick="makeInvestment()">Invest</button>
-            <button class="btn secondary" onclick="closeInvestmentModal()">Close</button>
-          </div>
-        </div>
-      </div>
-
-      <div id="relationship-modal" class="modal hidden" aria-hidden="true">
-        <div class="modal-inner">
-          <h3 id="rel-mii-name">Relationships</h3>
-          <div id="rel-status"></div>
-          <div id="rel-actions"></div>
-          <ul id="rel-friends-ul"></ul>
-          <div class="modal-actions">
-            <button class="btn secondary" onclick="closeRelationshipModal()">Close</button>
-          </div>
-        </div>
-      </div>
-
-      <div id="bank-modal" class="modal hidden" aria-hidden="true">
-        <div class="modal-inner">
-          <h3>Maple Town Bank</h3>
-          <div>Current Money: <span id="bank-current-money">0</span></div>
-          <div>Savings: <span id="savings-total">0</span></div>
-          <input id="savings-deposit-amount" type="number" />
-          <input id="savings-withdraw-amount" type="number" />
-          <div class="modal-actions">
-            <button class="btn" onclick="depositSavings()">Deposit</button>
-            <button class="btn secondary" onclick="closeBankModal()">Close</button>
-          </div>
         </div>
       </div>
 
     </main>
   </div>
 
-  <!-- Load the game script (keeps it after DOM so selectors exist) -->
   <script src="script.js"></script>
 </body>
 </html>
