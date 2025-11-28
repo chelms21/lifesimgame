@@ -91,14 +91,16 @@ const miiSelector = document.getElementById('mii-select');
 const residentCountSpan = document.getElementById('resident-count');
 const startTownButton = document.getElementById('start-town-button');
 const newMiiModal = document.getElementById('new-mii-modal');
+const residentListDiv = document.getElementById('resident-list'); 
+const caretakerStatusSpan = document.getElementById('caretaker-status'); 
+
+// Investment Modal Elements (New/Fixed)
 const investmentModal = document.getElementById('investment-modal'); 
 const investmentTotal = document.getElementById('investment-total'); 
 const investmentRate = document.getElementById('investment-rate'); 
 const investmentAmountInput = document.getElementById('investment-amount'); 
-const residentListDiv = document.getElementById('resident-list'); 
-const caretakerStatusSpan = document.getElementById('caretaker-status'); 
 
-// Bank Modal Elements
+// Bank Modal Elements (New/Fixed)
 const bankModal = document.getElementById('bank-modal');
 const bankCurrentMoney = document.getElementById('bank-current-money');
 const savingsTotalDisplay = document.getElementById('savings-total');
@@ -662,7 +664,7 @@ function attemptBreakup(partnerId) {
 
 function attemptProposal(partnerId) {
     const mii = miiList[currentMiiIndex];
-    const partner = miiList.find(m => m.id === parseInt(partnerId));
+    const partner = miiList.find(m => m.id === partnerId);
 
     if (!mii || !partner) {
         miiMessage.textContent = "Error: Mii or partner not found for proposal.";
@@ -902,7 +904,7 @@ function handleAutomaticActions(activeMiis) {
     });
 }
 
-// --- Investment System ---
+// --- Investment System (FIXED) ---
 
 function openInvestmentModal() {
     investmentModal.classList.remove('hidden');
@@ -944,7 +946,7 @@ function makeInvestment() {
 }
 
 
-// --- Bank Savings System ---
+// --- Bank Savings System (FIXED) ---
 
 function openBankModal() {
     bankModal.classList.remove('hidden');
@@ -1304,7 +1306,7 @@ function resetGame() {
 }
 
 
-// --- Modal Closing Listeners (FIXED) ---
+// --- Modal Closing Listeners ---
 
 window.addEventListener('click', function(event) {
     // Check if the click target is the modal backdrop, and not the modal content itself
