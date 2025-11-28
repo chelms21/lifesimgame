@@ -470,3 +470,56 @@ h1 {
 .save-area button:hover {
     background-color: #777;
 }
+
+/* Mii Card Stats Update */
+.stats {
+    text-align: left;
+    margin-bottom: 15px;
+}
+
+/* Relationship Modal Styles */
+#relationship-modal .modal-content {
+    max-width: 350px;
+}
+
+#relationship-modal h2 {
+    color: #ff69b4;
+}
+
+#rel-actions button {
+    background-color: #ff9800; /* Orange for interaction */
+    color: white;
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9em;
+    margin: 5px;
+    width: 90%;
+}
+#rel-actions button.propose {
+    background-color: #f44336; /* Red for proposal */
+}
+
+#rel-friendship-list {
+    margin-top: 20px;
+    padding-top: 10px;
+    border-top: 1px solid #ccc;
+    text-align: left;
+}
+
+#rel-friends-ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+#rel-friends-ul li {
+    background-color: #fff0f5;
+    margin: 5px 0;
+    padding: 5px 10px;
+    border-radius: 5px;
+    border-left: 3px solid #ff69b4;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
