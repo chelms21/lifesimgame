@@ -4,7 +4,81 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mii Town Simulator</title>
-    <link rel="stylesheet" href="style.css">
+    <style>
+        body { font-family: sans-serif; margin: 0; padding: 20px; background-color: #f4f4f9; }
+        .container { max-width: 1200px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        h1, h2 { color: #333; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .currency { font-size: 1.5em; font-weight: bold; color: green; }
+        
+        /* Mii Card Styling */
+        .mii-card { border: 1px solid #ccc; padding: 15px; border-radius: 8px; margin-bottom: 20px; background-color: #e9e9f9; display: flex; gap: 20px; }
+        .mii-avatar { font-size: 4em; transition: transform 0.3s, opacity 0.3s, filter 0.3s; }
+        .mii-avatar.sad { opacity: 0.7; }
+        .mii-avatar.starving { animation: shake 0.5s infinite; }
+        .mii-avatar.tired { filter: grayscale(50%); }
+        .mii-avatar.sleeping { transform: rotateX(180deg); font-size: 3em; color: #666; }
+        .mii-avatar.ill { color: #dc3545; animation: pulse 1s infinite; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25%, 75% { transform: translateX(-5px); } 50% { transform: translateX(5px); } }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+        
+        .stats { flex-grow: 1; }
+        .stats-row { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 15px; }
+        .stat-group { width: 150px; }
+        .stat-group label { display: block; font-weight: bold; margin-bottom: 3px; }
+        .bar-container { background-color: #ddd; height: 15px; border-radius: 5px; overflow: hidden; margin-top: 5px; }
+        .stat-bar { height: 100%; transition: width 0.3s; }
+        #happiness-bar { background-color: #ff69b4; }
+        #happiness-bar.low { background-color: #cc0000; }
+        #hunger-bar { background-color: #4CAF50; }
+        #hunger-bar.low { background-color: #cc0000; }
+        #energy-bar { background-color: #f7b731; } 
+        #energy-bar.low { background-color: #cc0000; }
+        
+        /* Controls and Actions */
+        .actions button, .controls button { padding: 10px 15px; margin-right: 10px; border: none; border-radius: 5px; cursor: pointer; color: white; font-weight: bold; transition: background-color 0.2s; margin-bottom: 5px;}
+        .actions { margin-top: 10px; }
+        #work-button { background-color: #007bff; }
+        #sleep-button { background-color: #ff69b4; }
+        .controls button { margin-bottom: 10px; }
+        .controls #store-button { background-color: #28a745; }
+        .controls #bank-button { background-color: #00bcd4; }
+        .controls #investment-button { background-color: #ff8c00; }
+        .controls #town-hall-button { background-color: #7b00d6; }
+        .controls #party-button { background-color: #ff007f; }
+
+        .inventory { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px; }
+        .item-slot { border: 1px solid #ddd; padding: 10px; border-radius: 5px; text-align: center; width: 120px; cursor: pointer; transition: background-color 0.2s; }
+        .item-slot:hover { background-color: #f0f0f0; }
+        
+        /* Modals */
+        .modal { display: none; position: fixed; z-index: 1; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4); }
+        .modal-content { background-color: #fefefe; margin: 5% auto; padding: 20px; border: 1px solid #888; width: 90%; max-width: 700px; border-radius: 10px; position: relative; }
+        .close-button { color: #aaa; float: right; font-size: 28px; font-weight: bold; }
+        .close-button:hover, .close-button:focus { color: #000; text-decoration: none; cursor: pointer; }
+        
+        /* Sidebar/Resident List */
+        .main-layout { display: flex; gap: 20px; }
+        .main-content { flex: 3; }
+        .sidebar { flex: 1; background-color: #f0f0f0; padding: 15px; border-radius: 8px; }
+        .resident-mini-card { padding: 8px; border: 1px solid #ccc; margin-bottom: 5px; border-radius: 4px; cursor: pointer; transition: background-color 0.1s; }
+        .resident-mini-card:hover { background-color: #e0e0e0; }
+        .resident-mini-card.selected { background-color: #ffd700; border-color: gold; }
+        .resident-mini-card.sad { background-color: #ffdddd; }
+        .resident-mini-card.hungry { background-color: #ddffdd; }
+        .resident-mini-card.asleep { background-color: #e9e9e9; opacity: 0.7; }
+        .resident-mini-card.ill { background-color: #ffcccc; border: 2px solid red; }
+        .resident-mini-card.child { background-color: #ccf2ff; }
+        .resident-mini-card h5 { margin: 0 0 5px 0; font-size: 1em; }
+        .resident-mini-card p { margin: 0; font-size: 0.8em; }
+        .status-icon { margin-right: 5px; }
+
+        /* Other UI */
+        #mii-request-box { background-color: #fff3cd; border: 1px solid #ffeeba; padding: 10px; border-radius: 5px; margin-top: 15px; color: #856404; font-weight: bold; }
+        .hidden { display: none !important; }
+        #goals-box { background-color: #e6f7ff; border: 1px solid #91d5ff; padding: 10px; border-radius: 5px; margin-top: 15px; }
+        .goal-item.completed { text-decoration: line-through; color: gray; }
+    </style>
 </head>
 <body>
     <div class="container">
