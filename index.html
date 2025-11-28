@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mii Life Simulator</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>✨ Mii Life on Maple Island ✨</h1>
+        
+        <div id="creation-screen" class="screen">
+            <h2>Create Your Mii</h2>
+            <label for="mii-name-input">Mii Name:</label>
+            <input type="text" id="mii-name-input" placeholder="e.g., Tom, Amy, Bob" maxlength="15">
+            <label for="mii-personality-select">Personality:</label>
+            <select id="mii-personality-select">
+                <option value="easygoing">Easygoing</option>
+                <option value="energetic">Energetic</option>
+                <option value="laid-back">Laid-back</option>
+                <option value="stubborn">Stubborn</option>
+            </select>
+            <button onclick="createMii()">Start Life</button>
+        </div>
+
+        <div id="game-screen" class="screen hidden">
+            <div class="header-bar">
+                <p>💰 Money: <span id="money-stat">0</span></p>
+            </div>
+
+            <div class="mii-card">
+                <h2 id="mii-name"></h2>
+                <div class="mii-avatar">
+                    <div class="face">
+                        <div class="eyes"></div>
+                        <div class="mouth"></div>
+                    </div>
+                </div>
+                
+                <div class="stats">
+                    <p>Personality: <span id="personality-stat"></span></p>
+                    <p>❤️ Happiness: <span id="happiness-stat"></span></p>
+                    <div class="bar-container"><div id="happiness-bar" class="stat-bar happy"></div></div>
+                    
+                    <p>🍔 Hunger: <span id="hunger-stat"></span></p>
+                    <div class="bar-container"><div id="hunger-bar" class="stat-bar full"></div></div>
+                </div>
+
+                <div class="message-box">
+                    <p id="mii-message"></p>
+                </div>
+            </div>
+
+            <div class="actions">
+                <button onclick="openStore()">🛒 Maple Store</button>
+                </div>
+            
+            <div class="inventory-area">
+                <h3>🎒 Inventory</h3>
+                <div id="inventory-list" class="inventory-grid">
+                    </div>
+            </div>
+
+            <div class="save-area">
+                <button onclick="saveGame()">💾 Save Game</button>
+                <button onclick="resetGame()">🗑️ Reset Game</button>
+                <p id="save-message" class="message-box"></p>
+            </div>
+        </div>
+        
+        <div id="store-modal" class="modal hidden">
+            <div class="modal-content">
+                <h2>🛒 Maple Store</h2>
+                <p>Current Money: <span id="store-money">0</span></p>
+                <div id="store-items" class="store-grid">
+                    </div>
+                <button onclick="closeStore()">Close Store</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
