@@ -380,7 +380,6 @@ function renderGoals() {
         listItem.className = 'goal-item';
         if (goal.completed) listItem.classList.add('completed');
         
-        // Custom progress display logic needed here for accurate percentage
         let progress = 0;
         if (goal.check.name.includes('happiness') || goal.check.name.includes('dating') || goal.check.name.includes('sleeping')) {
              progress = miiList.filter(mii => goal.check(mii)).length;
@@ -409,12 +408,24 @@ function initGame() {
     }
 }
 
+// NEW FUNCTION DEFINITION
+function updateCreationScreenState() {
+    const residentCount = miiList.length;
+    residentCountSpan.textContent = residentCount;
+
+    if (residentCount > 0) {
+        startTownButton.disabled = false;
+    } else {
+        startTownButton.disabled = true;
+    }
+}
+
 function showCreationScreen() {
     creationScreen.classList.remove('hidden');
     gameScreen.classList.add('hidden');
     // Hide all modals
     [storeModal, newMiiModal, investmentModal, relationshipModal, bankModal, townHallModal, jobAssignmentModal, giftModal].forEach(m => m.classList.add('hidden'));
-    updateCreationScreenState();
+    updateCreationScreenState(); // <-- LINE 417 FIX
 }
 
 function startGame() {
@@ -497,7 +508,7 @@ function addMiiToTown() {
 
     miiList.push(createMiiObject(name, gender, personality));
     nameInput.value = '';
-    updateCreationScreenState();
+    updateCreationScreenState(); // <-- LINE 500 FIX
     alert(`${name} has moved into the apartment!`);
 }
 
