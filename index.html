@@ -5,244 +5,84 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mii Town Simulator</title>
     <style>
-        /* General Reset and Font */
-        body { 
-            font-family: 'Verdana', sans-serif; 
-            margin: 0; 
-            padding: 0; 
-            background-color: #008080; /* Teal/Aqua background for console feel */
-            color: #333; 
-        }
+        body { font-family: sans-serif; margin: 0; padding: 20px; background-color: #f4f4f9; }
+        .container { max-width: 1200px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        h1, h2 { color: #333; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .currency { font-size: 1.5em; font-weight: bold; color: green; }
         
-        .container { 
-            max-width: 1000px; 
-            margin: 20px auto; 
-            background: #e0f7fa; /* Light cyan background for the app area */
-            padding: 20px; 
-            border-radius: 10px; 
-            box-shadow: 0 8px 16px rgba(0,0,0,0.3); 
-            border: 5px solid #004d40; /* Darker border */
-        }
-        
-        h1, h2, h3 { color: #004d40; border-bottom: 2px solid #b2ebf2; padding-bottom: 5px; margin-top: 15px; }
-        hr { border: 0; height: 1px; background-color: #b2ebf2; margin: 15px 0; }
-        
-        /* Header and Money Status */
-        .town-status-bar { 
-            display: flex; 
-            align-items: center; 
-            flex-wrap: wrap;
-            gap: 15px; 
-            padding: 10px; 
-            background-color: #c8e6c9; 
-            border-radius: 5px; 
-            margin-bottom: 15px; 
-        }
-        .town-status-bar p { margin: 0; }
-        .currency { font-size: 1.5em; font-weight: bold; color: #388e3c; }
-
-        /* Caretaker Status */
-        .management-status { 
-            margin-bottom: 20px; 
-            padding: 10px; 
-            background-color: #fffde7; 
-            border: 1px dashed #ffeb3b; 
-            border-radius: 5px; 
-        }
-        .management-status span { font-weight: bold; cursor: pointer; }
-        .management-status #caretaker-status.active { color: #00c853; }
-        .management-status #caretaker-status.inactive { color: #d50000; text-decoration: underline; }
-
         /* Mii Card Styling */
-        .mii-card { 
-            border: 3px solid #00bcd4; 
-            padding: 20px; 
-            border-radius: 10px; 
-            margin-bottom: 20px; 
-            background-color: #f0f8ff; 
-            display: flex; 
-            gap: 25px; 
-            align-items: center; 
-        }
-        .mii-avatar { 
-            position: relative; 
-            width: 100px; 
-            height: 100px; 
-            border-radius: 50%; 
-            background-color: #ffccbc; /* Skin tone base */
-            border: 3px solid #66bb6a; 
-            display: flex; 
-            flex-direction: column; 
-            justify-content: center; 
-            align-items: center;
-            font-size: 4em; 
-            transition: transform 0.3s, opacity 0.3s, filter 0.3s, background-color 0.3s; 
-        }
-        /* Basic Face Structure */
-        .mii-avatar::before {
-            content: '●'; /* Eyes */
-            position: absolute;
-            top: 35%;
-            left: 25%;
-            font-size: 0.25em;
-            line-height: 0;
-            color: #333;
-        }
-        .mii-avatar::after {
-            content: '●'; /* Eyes */
-            position: absolute;
-            top: 35%;
-            right: 25%;
-            font-size: 0.25em;
-            line-height: 0;
-            color: #333;
-        }
-
-        /* Mii Status Visuals */
-        .mii-avatar.sad { opacity: 0.7; background-color: #e0e0e0; border-color: #9e9e9e; }
-        .mii-avatar.starving { background-color: #f44336; border-color: #ff9800; animation: shake 0.5s infinite; }
-        .mii-avatar.tired { filter: grayscale(80%); }
-        .mii-avatar.sleeping { transform: rotateX(0deg); font-size: 3em; background-color: #b3e5fc; border-color: #03a9f4; content: '💤'; }
-        .mii-avatar.sleeping::before, .mii-avatar.sleeping::after { content: none; } /* Hide eyes when sleeping */
-        
+        .mii-card { border: 1px solid #ccc; padding: 15px; border-radius: 8px; margin-bottom: 20px; background-color: #e9e9f9; display: flex; gap: 20px; }
+        .mii-avatar { font-size: 4em; transition: transform 0.3s, opacity 0.3s, filter 0.3s; }
+        .mii-avatar.sad { opacity: 0.7; }
+        .mii-avatar.starving { animation: shake 0.5s infinite; }
+        .mii-avatar.tired { filter: grayscale(50%); }
+        .mii-avatar.sleeping { transform: rotateX(180deg); font-size: 3em; color: #666; }
+        .mii-avatar.ill { color: #dc3545; animation: pulse 1s infinite; }
         @keyframes shake { 0%, 100% { transform: translateX(0); } 25%, 75% { transform: translateX(-5px); } 50% { transform: translateX(5px); } }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
         
         .stats { flex-grow: 1; }
         .stats-row { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 15px; }
-        .bar-container { background-color: #ddd; height: 18px; border-radius: 9px; overflow: hidden; margin-top: 5px; border: 1px solid #aaa; }
-        .stat-bar { height: 100%; transition: width 0.3s; border-radius: 9px; }
+        .stat-group { width: 150px; }
+        .stat-group label { display: block; font-weight: bold; margin-bottom: 3px; }
+        .bar-container { background-color: #ddd; height: 15px; border-radius: 5px; overflow: hidden; margin-top: 5px; }
+        .stat-bar { height: 100%; transition: width 0.3s; }
         #happiness-bar { background-color: #ff69b4; }
         #happiness-bar.low { background-color: #cc0000; }
         #hunger-bar { background-color: #4CAF50; }
         #hunger-bar.low { background-color: #cc0000; }
+        #energy-bar { background-color: #f7b731; } 
+        #energy-bar.low { background-color: #cc0000; }
         
-        .message-box { 
-            background-color: #fff9c4; 
-            border: 2px solid #ffd740; 
-            padding: 10px; 
-            border-radius: 5px; 
-            margin-top: 10px; 
-            font-style: italic;
-        }
-        #mii-request-box { 
-            background-color: #ffe0b2; 
-            border: 2px solid #ffb74d; 
-            padding: 10px; 
-            border-radius: 5px; 
-            margin-top: 10px; 
-            color: #e65100; 
-            font-weight: bold; 
-            text-align: center;
-        }
-
         /* Controls and Actions */
-        .actions button, .town-status-bar button, .modal-content button { 
-            padding: 10px 15px; 
-            margin-right: 5px; 
-            border: none; 
-            border-radius: 5px; 
-            cursor: pointer; 
-            color: white; 
-            font-weight: bold; 
-            transition: background-color 0.2s, transform 0.1s; 
-            margin-bottom: 5px;
-            box-shadow: 0 3px #90a4ae;
-            text-shadow: 1px 1px 1px rgba(0,0,0,0.2);
-        }
-        .actions button:active, .town-status-bar button:active, .modal-content button:active {
-            transform: translateY(2px);
-            box-shadow: 0 1px #90a4ae;
-        }
+        .actions button, .controls button { padding: 10px 15px; margin-right: 10px; border: none; border-radius: 5px; cursor: pointer; color: white; font-weight: bold; transition: background-color 0.2s; margin-bottom: 5px;}
+        .actions { margin-top: 10px; }
+        #work-button { background-color: #007bff; }
+        #sleep-button { background-color: #ff69b4; }
+        .controls button { margin-bottom: 10px; }
+        .controls #store-button { background-color: #28a745; }
+        .controls #bank-button { background-color: #00bcd4; }
+        .controls #investment-button { background-color: #ff8c00; }
+        .controls #town-hall-button { background-color: #7b00d6; }
+        .controls #party-button { background-color: #ff007f; }
 
-        .actions #sleep-button { background-color: #ff69b4; box-shadow: 0 3px #d81b60; }
-        .actions #sleep-button:hover { background-color: #d81b60; }
-        .actions #sleep-button[style*="background-color: rgb(76, 175, 80)"] { background-color: #4CAF50 !important; box-shadow: 0 3px #388e3c; } /* Wake Up state */
-        .actions #sleep-button[style*="background-color: rgb(76, 175, 80)"]:hover { background-color: #388e3c !important; }
-        .actions #relationship-button { background-color: #ef5350; box-shadow: 0 3px #d32f2f; }
-        .actions button { background-color: #1e88e5; box-shadow: 0 3px #1565c0; }
-        .actions button:hover { background-color: #1565c0; }
-
-        /* Inventory */
-        .inventory-area { margin-top: 20px; }
-        .inventory-grid { display: flex; flex-wrap: wrap; gap: 15px; margin-top: 15px; }
-        .item-slot { 
-            border: 2px solid #009688; 
-            padding: 15px; 
-            border-radius: 8px; 
-            text-align: center; 
-            width: 100px; 
-            cursor: pointer; 
-            transition: background-color 0.2s, transform 0.1s; 
-            background-color: #e0f2f1;
-        }
-        .item-slot:hover { background-color: #b2dfdb; transform: scale(1.03); }
-        .item-slot h4 { margin: 0 0 5px 0; font-size: 1.1em; color: #00695c; }
-        .item-slot p { margin: 0; font-weight: bold; }
-        .item-slot small { color: #555; }
-
+        .inventory { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px; }
+        .item-slot { border: 1px solid #ddd; padding: 10px; border-radius: 5px; text-align: center; width: 120px; cursor: pointer; transition: background-color 0.2s; }
+        .item-slot:hover { background-color: #f0f0f0; }
+        
         /* Modals */
-        .modal { display: none; position: fixed; z-index: 100000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4); }
-        .modal-content { 
-            background-color: #fff; 
-            margin: 5% auto; 
-            padding: 25px; 
-            border: 5px solid #004d40; 
-            width: 90%; 
-            max-width: 600px; 
-            border-radius: 10px; 
-            position: relative; 
-            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-        }
-        .close-button { 
-            color: #aaa; 
-            float: right; 
-            font-size: 36px; 
-            font-weight: bold; 
-            line-height: 1;
-        }
+        .modal { display: none; position: fixed; z-index: 1; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4); }
+        .modal-content { background-color: #fefefe; margin: 5% auto; padding: 20px; border: 1px solid #888; width: 90%; max-width: 700px; border-radius: 10px; position: relative; }
+        .close-button { color: #aaa; float: right; font-size: 28px; font-weight: bold; }
         .close-button:hover, .close-button:focus { color: #000; text-decoration: none; cursor: pointer; }
-        .modal-content button { background-color: #00bcd4; box-shadow: 0 3px #0097a7; }
-        .modal-content button:hover { background-color: #0097a7; }
-        .modal-content .propose { background-color: #ffd700; color: #333; box-shadow: 0 3px #ffc107; }
-        .modal-content .propose:hover { background-color: #ffc107; }
-
-        /* Resident List (Mini Cards) */
-        .resident-list-area { 
-            margin-top: 20px; 
-            padding: 15px; 
-            background-color: #fce4ec; 
-            border-radius: 8px; 
-        }
-        .resident-grid { 
-            display: flex; 
-            flex-wrap: wrap; 
-            gap: 10px; 
-        }
-        .resident-mini-card { 
-            padding: 8px; 
-            border: 2px solid #f48fb1; 
-            border-radius: 6px; 
-            cursor: pointer; 
-            transition: background-color 0.1s; 
-            width: 120px;
-            background-color: #f8bbd0;
-            text-align: center;
-        }
-        .resident-mini-card:hover { background-color: #f48fb1; }
+        
+        /* Sidebar/Resident List */
+        .main-layout { display: flex; gap: 20px; }
+        .main-content { flex: 3; }
+        .sidebar { flex: 1; background-color: #f0f0f0; padding: 15px; border-radius: 8px; }
+        .resident-mini-card { padding: 8px; border: 1px solid #ccc; margin-bottom: 5px; border-radius: 4px; cursor: pointer; transition: background-color 0.1s; }
+        .resident-mini-card:hover { background-color: #e0e0e0; }
         .resident-mini-card.selected { background-color: #ffd700; border-color: gold; }
-        .resident-mini-card.sad { background-color: #ffdddd; border-color: #e57373; }
-        .resident-mini-card.hungry { background-color: #c8e6c9; border-color: #81c784; }
-        .resident-mini-card.asleep { background-color: #e9e9e9; opacity: 0.7; border-color: #cfd8dc; }
+        .resident-mini-card.sad { background-color: #ffdddd; }
+        .resident-mini-card.hungry { background-color: #ddffdd; }
+        .resident-mini-card.asleep { background-color: #e9e9e9; opacity: 0.7; }
+        .resident-mini-card.ill { background-color: #ffcccc; border: 2px solid red; }
+        .resident-mini-card.child { background-color: #ccf2ff; }
         .resident-mini-card h5 { margin: 0 0 5px 0; font-size: 1em; }
         .resident-mini-card p { margin: 0; font-size: 0.8em; }
-        .status-icon { margin-right: 5px; font-size: 1.2em; }
-        
+        .status-icon { margin-right: 5px; }
+
+        /* Other UI */
+        #mii-request-box { background-color: #fff3cd; border: 1px solid #ffeeba; padding: 10px; border-radius: 5px; margin-top: 15px; color: #856404; font-weight: bold; }
         .hidden { display: none !important; }
+        #goals-box { background-color: #e6f7ff; border: 1px solid #91d5ff; padding: 10px; border-radius: 5px; margin-top: 15px; }
+        .goal-item.completed { text-decoration: line-through; color: gray; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🏘️ Mii Town Simulator 🏘️</h1>
+        <h1>🏘️ Mii Town on Maple Island 🏘️</h1>
         
         <div id="creation-screen" class="screen">
             <h2>Start Your Town</h2>
@@ -280,21 +120,19 @@
                 <option value="stubborn">Stubborn</option>
             </select>
             
-            <button onclick="addMiiToTown()">➕ Add Mii to Town</button>
+            <button onclick="addMiiToTown()">Add Mii to Town</button>
             <hr>
             <p>Current Residents: <span id="resident-count">0</span></p>
-            <button onclick="startGame()" id="start-town-button" disabled>🚀 Start Town Life (Requires 1+ Mii)</button>
+            <button onclick="startGame()" id="start-town-button" disabled>Start Town Life (Requires 1+ Mii)</button>
         </div>
-        
+
         <div id="game-screen" class="screen hidden">
             
             <div class="town-status-bar">
-                <p class="currency">💰 Money: <span id="money-stat">0</span></p>
-                <button onclick="workForMoney()" id="work-button">💼 Work (+$10)</button>
+                <p>💰 Money: <span id="money-stat">0</span></p>
+                <button onclick="workForMoney()">💼 Work (+$10)</button>
                 <button onclick="openInvestmentModal()">📈 Invest</button>
-                <button onclick="openBankModal()">🏦 Bank Savings</button>
-                <button onclick="throwParty()" class="party-button">🎉 Throw Party (💰150)</button> 
-            </div>
+                <button onclick="openBankModal()">🏦 Bank Savings</button>  <button onclick="throwParty()" id="party-button">🎉 Throw Party (💰150)</button> </div>
             
             <div class="management-status">
                 <p>Caretaker Status: 
@@ -314,13 +152,17 @@
             </div>
 
             <div class="mii-card">
-                <div class="left-section">
-                    <h2 id="mii-name"></h2>
-                    <div id="mii-request-box" class="hidden">
-                        <p>I want a <span id="requested-item-name"></span>!</p>
+                <h2 id="mii-name"></h2>
+                
+                <div id="mii-request-box" class="request-box hidden">
+                    <p>I want a <span id="requested-item-name"></span>!</p>
+                </div>
+                
+                <div class="mii-avatar">
+                    <div class="face">
+                        <div class="eyes"></div>
+                        <div class="mouth"></div>
                     </div>
-                    <div class="mii-avatar">
-                        </div>
                 </div>
                 
                 <div class="stats">
@@ -329,16 +171,15 @@
                     <p>Relationship: <span id="relationship-stat">Single</span></p> 
                     
                     <p>❤️ Happiness: <span id="happiness-stat"></span></p>
-                    <div class="bar-container"><div id="happiness-bar" class="stat-bar"></div></div>
+                    <div class="bar-container"><div id="happiness-bar" class="stat-bar happy"></div></div>
                     
                     <p>🍔 Hunger: <span id="hunger-stat"></span></p>
-                    <div class="bar-container"><div id="hunger-bar" class="stat-bar"></div></div>
-                    
-                    <div class="message-box">
-                        <p id="mii-message"></p>
-                    </div>
+                    <div class="bar-container"><div id="hunger-bar" class="stat-bar full"></div></div>
                 </div>
 
+                <div class="message-box">
+                    <p id="mii-message"></p>
+                </div>
             </div>
 
             <div class="actions">
@@ -355,7 +196,6 @@
             </div>
 
             <div class="save-area">
-                <hr>
                 <button onclick="saveGame()">💾 Save Game</button>
                 <button onclick="resetGame()">🗑️ Reset Game</button>
                 <p id="save-message" class="message-box"></p>
@@ -364,11 +204,9 @@
         
         <div id="store-modal" class="modal hidden">
             <div class="modal-content">
-                <span class="close-button" onclick="closeStore()">&times;</span>
                 <h2>🛒 Maple Store</h2>
-                <p>Current Town Money: <span id="store-money" class="currency">0</span></p>
-                <hr>
-                <div id="store-items" class="inventory-grid">
+                <p>Current Money: <span id="store-money">0</span></p>
+                <div id="store-items" class="store-grid">
                     </div>
                 <button onclick="closeStore()">Close Store</button>
             </div>
@@ -376,9 +214,8 @@
 
         <div id="bank-modal" class="modal hidden">
             <div class="modal-content">
-                <span class="close-button" onclick="closeBankModal()">&times;</span>
                 <h2>🏦 Maple Town Bank</h2>
-                <p>Current Town Money: 💰<span id="bank-current-money">0</span></p>
+                <p>Current Money: 💰<span id="bank-current-money">0</span></p>
                 <hr>
                 <h3>Savings Account</h3>
                 <p>Current Savings: 💰<span id="savings-total">0</span></p>
@@ -400,8 +237,7 @@
         
         <div id="new-mii-modal" class="modal hidden">
             <div class="modal-content">
-                <span class="close-button" onclick="closeNewMiiModal()">&times;</span>
-                <h2>➕ Create New Resident</h2>
+                <h2>Create New Resident</h2>
                 <label for="new-mii-name-input">Mii Name:</label>
                 <input type="text" id="new-mii-name-input" placeholder="e.g., Jane, Alex" maxlength="15">
                 
@@ -425,7 +261,6 @@
 
         <div id="investment-modal" class="modal hidden">
             <div class="modal-content">
-                <span class="close-button" onclick="closeInvestmentModal()">&times;</span>
                 <h2>📈 Town Investment Fund</h2>
                 <p>Current Funds: 💰<span id="investment-total">0</span></p>
                 <p>Passive Income: 💰<span id="investment-rate">0</span>/tick</p>
@@ -440,7 +275,6 @@
 
         <div id="relationship-modal" class="modal hidden">
             <div class="modal-content">
-                <span class="close-button" onclick="closeRelationshipModal()">&times;</span>
                 <h2 id="rel-mii-name"></h2>
                 <p>Current Relationship Status: <span id="rel-status"></span></p>
                 
