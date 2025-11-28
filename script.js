@@ -15,7 +15,7 @@ let gameData = {
 }
 
 let gameLoop = null; 
-const SAVE_KEY = 'miiLifeSaveDataV2'; // Changed key due to new data structure
+const SAVE_KEY = 'miiLifeSaveDataV2'; 
 const DECAY_RATE = 5; 
 const UPDATE_INTERVAL = 2000; 
 
@@ -101,16 +101,20 @@ function createMii() {
 // --- Game Loop Functions ---
 
 function updateStats() {
-    // ... (Keep the decay logic from previous version, just use mii object) ...
+    // 1. Hunger always decreases
     mii.hunger = Math.max(0, mii.hunger - DECAY_RATE);
 
+    // 2. Happiness decreases faster if hunger is low
     let happinessDecay = DECAY_RATE;
     if (mii.hunger < 30) {
         happinessDecay *= 2; 
     }
+    
+    // Personality effect (e.g., Stubborn Miis get sad slower)
     if (mii.personality === 'stubborn') {
         happinessDecay *= 0.7; 
     }
+
     mii.happiness = Math.max(0, mii.happiness - happinessDecay);
     
     // Small chance to earn money (income simulation)
@@ -124,17 +128,22 @@ function updateStats() {
 }
 
 function renderMiiState() {
-    // ... (Keep the render logic from previous version, using mii object) ...
     miiNameDisplay.textContent = mii.name;
     personalityStat.textContent = mii.personality.charAt(0).toUpperCase() + mii.personality.slice(1);
     
+    // Update numerical stats
     happinessStat.textContent = Math.round(mii.happiness);
     hungerStat.textContent = Math.round(mii.hunger);
 
+    // Update bar widths
     happinessBar.style.width = `${mii.happiness}%`;
     hungerBar.style.width = `${mii.hunger}%`;
 
-    // Message logic (simplified)
+    // Reset class status before applying new ones
+    happinessBar.classList.remove('low');
+    hungerBar.classList.remove('low');
+    
+    // Message logic
     if (mii.happiness <= 0) {
         // Handled by checkIfGameIsOver
     } else if (mii.hunger < 30) {
@@ -145,8 +154,6 @@ function renderMiiState() {
         happinessBar.classList.add('low');
     } else {
         miiMessage.textContent = `${mii.name} is doing okay.`;
-        happinessBar.classList.remove('low');
-        hungerBar.classList.remove('low');
     }
 }
 
@@ -192,22 +199,25 @@ function useItem(key) {
 
         if (item.type === 'food') {
             mii.hunger = Math.min(100, mii.hunger + item.hunger);
-            miiMessage.textContent = `${mii.name} loved the ${item.name}! Hunger +${item.hunger}.`;
         }
         
         // Mood items and food items both boost happiness
-        mii.happiness = Math.min(100, mii.happiness + item.happiness);
+        let happinessBoost = item.happiness;
         
-        // Personality check for effect messaging (optional)
+        // Personality check for effect strength
         if (item.type === 'mood' && mii.personality === 'stubborn') {
-             miiMessage.textContent = `${mii.name} is slightly happier from the ${item.name}.`;
+            happinessBoost /= 2; // Stubborn Miis get less boost from toys/coffee
         }
+
+        mii.happiness = Math.min(100, mii.happiness + happinessBoost);
+        
+        miiMessage.textContent = `${mii.name} used the ${item.name} and feels boosted!`;
         
         renderMiiState();
         renderInventory();
         saveGame();
     } else {
-        alert("You don't have that item!");
+        miiMessage.textContent = `You don't have any ${item.name}!`;
     }
 }
 
@@ -219,6 +229,7 @@ function openStore() {
 }
 
 function closeStore() {
+    // FIX: This adds the 'hidden' class back to hide the modal
     storeModal.classList.add('hidden');
 }
 
@@ -263,11 +274,24 @@ function buyItem(key, cost) {
     }
 }
 
+// --- Status and Game Over ---
+
+function checkIfGameIsOver() {
+    if (mii.happiness <= 0) {
+        clearInterval(gameLoop);
+        gameLoop = null; 
+        miiMessage.textContent = `💔 ${mii.name} has left Maple Island due to extreme sadness.`;
+        saveMessage.textContent = "The game has ended. Please reset to start a new Mii.";
+        alert("Game Over! Happiness dropped to 0.");
+    }
+}
+
 // --- Save/Load/Reset Functions ---
 
 function saveGame() {
     try {
-        const dataToSave = JSON.stringify({ mii, gameData }); // Save both objects
+        // Save both objects
+        const dataToSave = JSON.stringify({ mii, gameData }); 
         localStorage.setItem(SAVE_KEY, dataToSave);
         saveMessage.textContent = `Game saved successfully! (${new Date().toLocaleTimeString()})`;
     } catch (e) {
@@ -279,13 +303,14 @@ function saveGame() {
 function loadGame(savedData) {
     try {
         const loaded = JSON.parse(savedData);
+        
         // Load Mii data
         mii.name = loaded.mii.name || 'Unknown Mii';
         mii.personality = loaded.mii.personality || 'easygoing';
         mii.happiness = loaded.mii.happiness;
         mii.hunger = loaded.mii.hunger;
         
-        // Load Game data, handle case where old saves didn't have gameData
+        // Load Game data
         gameData.money = loaded.gameData.money || 0;
         gameData.inventory = loaded.gameData.inventory || {};
         
@@ -310,5 +335,23 @@ function resetGame() {
     }
 }
 
-// Start the whole process
+
+// --- Additional Closing Listeners (Modal Fix) ---
+
+// 1. Close when user clicks outside the modal content area
+window.addEventListener('click', function(event) {
+    if (event.target === storeModal && !storeModal.classList.contains('hidden')) {
+        closeStore();
+    }
+});
+
+// 2. Close when user presses the Escape key
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape' && !storeModal.classList.contains('hidden')) {
+        closeStore();
+    }
+});
+
+
+// Start the whole process when the script loads
 initGame();
