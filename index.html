@@ -58,7 +58,7 @@
                 <p>💰 Money: <span id="money-stat">0</span></p>
                 <button onclick="workForMoney()">💼 Work (+$10)</button>
                 <button onclick="openInvestmentModal()">📈 Invest</button>
-            </div>
+                <button onclick="openBankModal()">🏦 Bank Savings</button>  <button onclick="throwParty()" id="party-button">🎉 Throw Party (💰150)</button> </div>
             
             <div class="management-status">
                 <p>Caretaker Status: 
@@ -135,6 +135,29 @@
                 <div id="store-items" class="store-grid">
                     </div>
                 <button onclick="closeStore()">Close Store</button>
+            </div>
+        </div>
+
+        <div id="bank-modal" class="modal hidden">
+            <div class="modal-content">
+                <h2>🏦 Maple Town Bank</h2>
+                <p>Current Money: 💰<span id="bank-current-money">0</span></p>
+                <hr>
+                <h3>Savings Account</h3>
+                <p>Current Savings: 💰<span id="savings-total">0</span></p>
+                <p>Interest Rate: **1% per tick** (Guaranteed Growth)</p>
+
+                <label for="savings-deposit-amount">Amount to Deposit:</label>
+                <input type="number" id="savings-deposit-amount" min="10" placeholder="Min 10 Gold">
+                <button onclick="depositSavings()">Deposit</button>
+                
+                <hr>
+                
+                <label for="savings-withdraw-amount">Amount to Withdraw:</label>
+                <input type="number" id="savings-withdraw-amount" min="10" placeholder="Min 10 Gold">
+                <button onclick="withdrawSavings()">Withdraw</button>
+                
+                <button onclick="closeBankModal()">Close Bank</button>
             </div>
         </div>
         
