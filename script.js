@@ -52,8 +52,8 @@ const creationScreen = document.getElementById('creation-screen');
 const gameScreen = document.getElementById('game-screen');
 const miiNameDisplay = document.getElementById('mii-name');
 const personalityStat = document.getElementById('personality-stat');
-const genderStat = document.getElementById('gender-stat'); // NEW
-const relationshipStat = document.getElementById('relationship-stat'); // NEW
+const genderStat = document.getElementById('gender-stat'); 
+const relationshipStat = document.getElementById('relationship-stat'); 
 const happinessStat = document.getElementById('happiness-stat');
 const hungerStat = document.getElementById('hunger-stat');
 const happinessBar = document.getElementById('happiness-bar');
@@ -124,7 +124,7 @@ function renderCurrentMiiState() {
     const partner = mii.relationship.partnerId ? miiList.find(m => m.id === mii.relationship.partnerId) : null;
 
     miiNameDisplay.textContent = mii.name;
-    genderStat.textContent = mii.gender === 'male' ? 'Male ♂️' : 'Female ♀️'; // NEW
+    genderStat.textContent = mii.gender === 'male' ? 'Male ♂️' : 'Female ♀️'; 
     personalityStat.textContent = mii.personality.charAt(0).toUpperCase() + mii.personality.slice(1);
     
     // Update Relationship Status Display
@@ -198,7 +198,7 @@ function showCreationScreen() {
     gameScreen.classList.add('hidden');
     newMiiModal.classList.add('hidden');
     investmentModal.classList.add('hidden'); 
-    relationshipModal.classList.add('hidden'); // Ensure closed
+    relationshipModal.classList.add('hidden');
     updateCreationScreenState();
 }
 
@@ -243,10 +243,10 @@ function updateCreationScreenState() {
 
 function addMiiToTown() {
     const nameInput = document.getElementById('mii-name-input');
-    const genderSelect = document.getElementById('mii-gender-select'); // NEW
+    const genderSelect = document.getElementById('mii-gender-select');
     const personalitySelect = document.getElementById('mii-personality-select');
     const name = nameInput.value.trim();
-    const gender = genderSelect.value; // NEW
+    const gender = genderSelect.value;
     const personality = personalitySelect.value;
     
     if (name === "") {
@@ -257,17 +257,17 @@ function addMiiToTown() {
     miiList.push({
         id: Date.now(), 
         name: name,
-        gender: gender, // NEW
+        gender: gender, 
         personality: personality,
         happiness: 100,
         hunger: 100,
         isSleeping: false,
         currentRequest: null,
         isDead: false,
-        relationship: { // NEW
+        relationship: {
             status: 'single', 
             partnerId: null,
-            friends: [] // Array of Mii IDs
+            friends: [] 
         }
     });
     
@@ -323,10 +323,10 @@ function closeNewMiiModal() {
 
 function addNewMii() {
     const nameInput = document.getElementById('new-mii-name-input');
-    const genderSelect = document.getElementById('new-mii-gender-select'); // NEW
+    const genderSelect = document.getElementById('new-mii-gender-select');
     const personalitySelect = document.getElementById('new-mii-personality-select');
     const name = nameInput.value.trim();
-    const gender = genderSelect.value; // NEW
+    const gender = genderSelect.value;
     const personality = personalitySelect.value;
     
     if (name === "") {
@@ -337,14 +337,14 @@ function addNewMii() {
     miiList.push({
         id: Date.now(), 
         name: name,
-        gender: gender, // NEW
+        gender: gender, 
         personality: personality,
         happiness: 100,
         hunger: 100,
         isSleeping: false,
         currentRequest: null,
         isDead: false,
-        relationship: { // NEW
+        relationship: {
             status: 'single', 
             partnerId: null,
             friends: [] 
@@ -447,7 +447,10 @@ function buyCaretaker() {
 
 function openRelationshipModal() {
     const mii = miiList[currentMiiIndex];
-    if (!mii) return;
+    if (!mii) {
+        miiMessage.textContent = "Please select a resident to view relationships.";
+        return;
+    }
 
     relMiiName.textContent = mii.name;
     
@@ -474,6 +477,7 @@ function closeRelationshipModal() {
 function renderRelationshipActions() {
     const mii = miiList[currentMiiIndex];
     relActionsDiv.innerHTML = '';
+    // Filter out deceased and current Mii
     const otherActiveMiis = miiList.filter(m => !m.isDead && m.id !== mii.id);
 
     if (otherActiveMiis.length === 0) {
@@ -485,12 +489,15 @@ function renderRelationshipActions() {
     if (mii.relationship.status !== 'single') {
         const partner = miiList.find(m => m.id === mii.relationship.partnerId);
         
-        // Breakup Button
-        relActionsDiv.innerHTML += `<button onclick="attemptBreakup('${partner.id}')">💔 Break Up with ${partner.name}</button>`;
-        
-        // Proposal Button
-        if (mii.relationship.status === 'dating') {
-             relActionsDiv.innerHTML += `<button class="propose" onclick="attemptProposal('${partner.id}')">💍 Propose to ${partner.name}</button>`;
+        // Safety check for partner existence
+        if (partner) {
+            // Breakup Button
+            relActionsDiv.innerHTML += `<button onclick="attemptBreakup('${partner.id}')">💔 Break Up with ${partner.name}</button>`;
+            
+            // Proposal Button
+            if (mii.relationship.status === 'dating') {
+                 relActionsDiv.innerHTML += `<button class="propose" onclick="attemptProposal('${partner.id}')">💍 Propose to ${partner.name}</button>`;
+            }
         }
     }
 
@@ -509,6 +516,7 @@ function renderRelationshipActions() {
                  actionFunction = 'attemptDating';
             }
             
+            // Pass the Mii ID as a string in the onclick attribute
             return `<button onclick="${actionFunction}('${target.id}')">${actionType} ${target.name} (${target.gender === 'male' ? '♂️' : '♀️'})</button>`;
         }).join('');
         
@@ -536,9 +544,16 @@ function renderFriendList() {
 
 function attemptFriendship(targetId) {
     const mii = miiList[currentMiiIndex];
-    const target = miiList.find(m => m.id === targetId);
+    // --- FIX: Use parseInt() to match the numeric ID ---
+    const target = miiList.find(m => m.id === parseInt(targetId)); 
 
-    if (mii.relationship.friends.includes(targetId)) {
+    // --- FIX: Safety check for undefined target ---
+    if (!mii || !target) {
+        miiMessage.textContent = "Error: Mii or target not found for interaction.";
+        return;
+    }
+
+    if (mii.relationship.friends.includes(target.id)) {
         miiMessage.textContent = `${mii.name} is already friends with ${target.name}!`;
         return;
     }
@@ -547,7 +562,7 @@ function attemptFriendship(targetId) {
 
     if (Math.random() < successChance) {
         // Success
-        mii.relationship.friends.push(targetId);
+        mii.relationship.friends.push(target.id);
         target.relationship.friends.push(mii.id);
         mii.happiness = Math.min(100, mii.happiness + FRIENDSHIP_HAPPINESS_BONUS);
         target.happiness = Math.min(100, target.happiness + FRIENDSHIP_HAPPINESS_BONUS);
@@ -559,13 +574,20 @@ function attemptFriendship(targetId) {
     }
 
     renderCurrentMiiState();
-    openRelationshipModal(); // Re-render the modal
+    openRelationshipModal(); 
     saveGame();
 }
 
 function attemptDating(targetId) {
     const mii = miiList[currentMiiIndex];
-    const target = miiList.find(m => m.id === targetId);
+    // --- FIX: Use parseInt() to match the numeric ID ---
+    const target = miiList.find(m => m.id === parseInt(targetId)); 
+
+    // --- FIX: Safety check for undefined target ---
+    if (!mii || !target) {
+        miiMessage.textContent = "Error: Mii or target not found for dating attempt.";
+        return;
+    }
 
     if (mii.gender === target.gender) {
         miiMessage.textContent = `${mii.name} and ${target.name} share a great friendship, but not romantic interest.`;
@@ -577,7 +599,7 @@ function attemptDating(targetId) {
 
     if (success) {
         mii.relationship.status = 'dating';
-        mii.relationship.partnerId = targetId;
+        mii.relationship.partnerId = target.id;
         target.relationship.status = 'dating';
         target.relationship.partnerId = mii.id;
         
@@ -597,8 +619,15 @@ function attemptDating(targetId) {
 
 function attemptBreakup(partnerId) {
     const mii = miiList[currentMiiIndex];
-    const partner = miiList.find(m => m.id === partnerId);
+    // --- FIX: Use parseInt() to match the numeric ID ---
+    const partner = miiList.find(m => m.id === parseInt(partnerId));
     
+    // --- FIX: Safety check for undefined partner ---
+    if (!mii || !partner) {
+        miiMessage.textContent = "Error: Mii or partner not found for breakup.";
+        return;
+    }
+
     if (confirm(`Are you sure ${mii.name} wants to break up with ${partner.name}? This will cause sadness!`)) {
         // Clear Mii's status
         mii.relationship.status = 'single';
@@ -606,11 +635,9 @@ function attemptBreakup(partnerId) {
         mii.happiness = Math.max(0, mii.happiness - BREAKUP_HAPPINESS_PENALTY);
         
         // Clear Partner's status
-        if (partner) {
-            partner.relationship.status = 'single';
-            partner.relationship.partnerId = null;
-            partner.happiness = Math.max(0, partner.happiness - BREAKUP_HAPPINESS_PENALTY);
-        }
+        partner.relationship.status = 'single';
+        partner.relationship.partnerId = null;
+        partner.happiness = Math.max(0, partner.happiness - BREAKUP_HAPPINESS_PENALTY);
         
         miiMessage.textContent = `😭 ${mii.name} and ${partner.name} broke up! That was rough.`;
     }
@@ -622,9 +649,19 @@ function attemptBreakup(partnerId) {
 
 function attemptProposal(partnerId) {
     const mii = miiList[currentMiiIndex];
-    const partner = miiList.find(m => m.id === partnerId);
+    // --- FIX: Use parseInt() to match the numeric ID ---
+    const partner = miiList.find(m => m.id === parseInt(partnerId));
 
-    if (mii.relationship.status !== 'dating') return;
+    // --- FIX: Safety check for undefined partner ---
+    if (!mii || !partner) {
+        miiMessage.textContent = "Error: Mii or partner not found for proposal.";
+        return;
+    }
+    
+    if (mii.relationship.status !== 'dating') {
+        miiMessage.textContent = "Only dating Miis can propose marriage.";
+        return;
+    }
     
     // Proposal chance is based on average happiness
     const successChance = (mii.happiness + partner.happiness) / 200 * PROPOSAL_CHANCE;
@@ -737,7 +774,7 @@ function handleCaretaker(activeMiis) {
     });
 }
 
-// --- Investment System (Unchanged) ---
+// --- Investment System ---
 
 function openInvestmentModal() {
     investmentModal.classList.remove('hidden');
