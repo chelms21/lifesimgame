@@ -1,22 +1,34 @@
 // --- Game State Variables ---
-let miiList = []; // Array to hold all Mii objects
-let currentMiiIndex = -1; // Index of the currently selected Mii in miiList
+let miiList = []; 
+let currentMiiIndex = -1; 
 
 let gameData = {
     money: 50, 
     inventory: {
         'apple': 2,
         'coffee': 1
-    }
+    },
+    isCaretakerActive: false, // NEW: Toggle state for Caretaker
+    investmentTotal: 0, // NEW: Total funds invested
 }
 
 let gameLoop = null; 
-const SAVE_KEY = 'miiLifeSaveDataV4'; // Updated key
-const DECAY_RATE = 2; // *** SLOWER DECAY RATE ***
-const UPDATE_INTERVAL = 3000; // *** SLOWER GAME LOOP (3 seconds) ***
-const REQUEST_CHANCE = 0.03; // 3% chance per tick
+const SAVE_KEY = 'miiLifeSaveDataV5'; // Updated key
+const DECAY_RATE = 2; 
+const UPDATE_INTERVAL = 3000; 
+const REQUEST_CHANCE = 0.03; 
 
-// --- Item Definitions (Remains the same) ---
+// --- System Constants ---
+const CARETAKER_COST_PER_MII = 5;
+const CARETAKER_FOOD = 'apple';
+const CARETAKER_MOOD = 'coffee';
+const CARETAKER_THRESHOLD = 40; // Miis below this stat level get help
+
+// --- Investment Constants ---
+const INVESTMENT_RATE = 100; // 1 gold per 100 invested
+const INVESTMENT_MIN = 10;
+
+// --- Item Definitions ---
 const ITEMS = {
     'apple': { name: 'Apple 🍎', type: 'food', cost: 10, hunger: 20, happiness: 5 },
     'sandwich': { name: 'Sandwich 🥪', type: 'food', cost: 30, hunger: 40, happiness: 10 },
@@ -50,6 +62,11 @@ const miiSelector = document.getElementById('mii-select');
 const residentCountSpan = document.getElementById('resident-count');
 const startTownButton = document.getElementById('start-town-button');
 const newMiiModal = document.getElementById('new-mii-modal');
+const caretakerToggle = document.getElementById('caretaker-toggle'); // NEW
+const investmentModal = document.getElementById('investment-modal'); // NEW
+const investmentTotal = document.getElementById('investment-total'); // NEW
+const investmentRate = document.getElementById('investment-rate'); // NEW
+const investmentAmountInput = document.getElementById('investment-amount'); // NEW
 
 
 // --- Initialization and Screen Management ---
@@ -68,12 +85,13 @@ function showCreationScreen() {
     creationScreen.classList.remove('hidden');
     gameScreen.classList.add('hidden');
     newMiiModal.classList.add('hidden');
+    investmentModal.classList.add('hidden'); // Ensure closed
     updateCreationScreenState();
 }
 
 function startGame() {
     if (miiList.length > 0) {
-        currentMiiIndex = 0; // Select the first Mii
+        currentMiiIndex = 0; 
         showGameScreen();
     }
 }
@@ -81,9 +99,9 @@ function startGame() {
 function showGameScreen() {
     creationScreen.classList.add('hidden');
     newMiiModal.classList.add('hidden');
+    investmentModal.classList.add('hidden');
     gameScreen.classList.remove('hidden');
     
-    // Ensure loop is running
     if (!gameLoop) {
         gameLoop = setInterval(updateAllMiiStats, UPDATE_INTERVAL);
     }
@@ -91,9 +109,11 @@ function showGameScreen() {
     renderMiiSelector();
     renderInventory();
     renderMoney();
+    caretakerToggle.checked = gameData.isCaretakerActive; // Sync toggle state
     renderCurrentMiiState();
 }
 
+// ... (Mii Creation/Management functions remain the same: addMiiToTown, startGame, updateCreationScreenState, openNewMiiCreation, closeNewMiiModal, addNewMii, renderMiiSelector, switchMii) ...
 function updateCreationScreenState() {
     residentCountSpan.textContent = miiList.length;
     if (miiList.length > 0) {
@@ -103,26 +123,6 @@ function updateCreationScreenState() {
         startTownButton.disabled = true;
         startTownButton.textContent = `Start Town Life (Requires 1+ Mii)`;
     }
-}
-
-// --- Mii Management ---
-
-/**
- * Creates a new Mii object and adds it to the list.
- * @param {string} name 
- * @param {string} personality 
- */
-function createMiiObject(name, personality) {
-    return {
-        id: Date.now(), // Unique ID for persistence
-        name: name,
-        personality: personality,
-        happiness: 100,
-        hunger: 100,
-        isSleeping: false,
-        currentRequest: null,
-        isDead: false
-    };
 }
 
 function addMiiToTown() {
@@ -136,18 +136,54 @@ function addMiiToTown() {
         return;
     }
 
-    miiList.push(createMiiObject(name, personality));
+    miiList.push({
+        id: Date.now(), 
+        name: name,
+        personality: personality,
+        happiness: 100,
+        hunger: 100,
+        isSleeping: false,
+        currentRequest: null,
+        isDead: false
+    });
     
-    // Reset form fields
     nameInput.value = '';
     
     updateCreationScreenState();
     alert(`${name} has moved into the apartment!`);
 }
 
+function renderMiiSelector() {
+    miiSelector.innerHTML = '';
+    const activeMiis = miiList.filter(m => !m.isDead);
+
+    activeMiis.forEach((mii, index) => {
+        const option = document.createElement('option');
+        option.value = miiList.findIndex(m => m.id === mii.id); // Find original index
+        option.textContent = `${mii.name} (${Math.round(mii.happiness)}❤️)`;
+        miiSelector.appendChild(option);
+    });
+
+    // Re-select the current Mii index if possible
+    if (currentMiiIndex >= 0 && miiList[currentMiiIndex] && !miiList[currentMiiIndex].isDead) {
+         miiSelector.value = currentMiiIndex;
+    } else if (activeMiis.length > 0) {
+        currentMiiIndex = miiList.findIndex(m => m.id === activeMiis[0].id);
+        miiSelector.value = currentMiiIndex;
+    } else {
+        currentMiiIndex = -1;
+    }
+
+    renderCurrentMiiState();
+}
+
+function switchMii() {
+    currentMiiIndex = parseInt(miiSelector.value);
+    renderCurrentMiiState();
+}
+
 function openNewMiiCreation() {
     newMiiModal.classList.remove('hidden');
-    // Clear previous input
     document.getElementById('new-mii-name-input').value = '';
 }
 
@@ -166,103 +202,79 @@ function addNewMii() {
         return;
     }
 
-    miiList.push(createMiiObject(name, personality));
+    miiList.push({
+        id: Date.now(), 
+        name: name,
+        personality: personality,
+        happiness: 100,
+        hunger: 100,
+        isSleeping: false,
+        currentRequest: null,
+        isDead: false
+    });
     
     closeNewMiiModal();
-    renderMiiSelector(); // Update the dropdown list
+    renderMiiSelector(); 
     miiMessage.textContent = `${name} has joined the town!`;
     saveGame();
 }
+// ----------------------------------------------------------------------
 
-function renderMiiSelector() {
-    miiSelector.innerHTML = '';
-    miiList.forEach((mii, index) => {
-        if (!mii.isDead) {
-            const option = document.createElement('option');
-            option.value = index;
-            option.textContent = `${mii.name} (${Math.round(mii.happiness)}❤️)`;
-            miiSelector.appendChild(option);
-        }
-    });
-
-    // Re-select the current Mii if they are still alive
-    if (currentMiiIndex >= 0 && miiList[currentMiiIndex] && !miiList[currentMiiIndex].isDead) {
-         miiSelector.value = currentMiiIndex;
-    } else if (miiList.filter(m => !m.isDead).length > 0) {
-        // If the current Mii died, select the next available Mii
-        currentMiiIndex = miiList.findIndex(m => !m.isDead);
-        miiSelector.value = currentMiiIndex;
-    } else {
-        // If everyone is gone
-        currentMiiIndex = -1;
-    }
-
-    renderCurrentMiiState();
-}
-
-function switchMii() {
-    currentMiiIndex = parseInt(miiSelector.value);
-    renderCurrentMiiState();
-}
 
 // --- Core Game Loop Functions ---
 
-/**
- * Iterates through ALL Miis and updates their stats.
- */
 function updateAllMiiStats() {
+    const activeMiis = miiList.filter(mii => !mii.isDead);
+    
+    // 1. **Caretaker System Check**
+    if (gameData.isCaretakerActive && activeMiis.length > 0) {
+        handleCaretaker(activeMiis);
+    }
+    
+    // 2. **Investment Income**
+    const passiveIncome = Math.floor(gameData.investmentTotal / INVESTMENT_RATE);
+    if (passiveIncome > 0) {
+        gameData.money += passiveIncome;
+    }
+
+    // 3. **Mii Stat Decay & Requests**
     miiList.forEach(mii => {
         if (mii.isSleeping || mii.isDead) return; 
 
-        // 1. Hunger always decreases
+        // Decay logic remains the same
         mii.hunger = Math.max(0, mii.hunger - DECAY_RATE);
-
-        // 2. Happiness decreases
-        let happinessDecay = DECAY_RATE;
-        if (mii.hunger < 30) {
-            happinessDecay *= 2; 
-        }
-        if (mii.personality === 'stubborn') {
-            happinessDecay *= 0.7; 
-        }
-
+        let happinessDecay = mii.hunger < 30 ? DECAY_RATE * 2 : DECAY_RATE;
+        if (mii.personality === 'stubborn') happinessDecay *= 0.7; 
         mii.happiness = Math.max(0, mii.happiness - happinessDecay);
         
-        // 3. Request Generation
+        // Request Generation & Decay
         if (!mii.currentRequest && Math.random() < REQUEST_CHANCE && mii.happiness < 70) {
             mii.currentRequest = REQUESTABLE_ITEMS[Math.floor(Math.random() * REQUESTABLE_ITEMS.length)];
         }
-        
-        // 4. Request Decay (If ignored)
         if (mii.currentRequest) {
             mii.happiness = Math.max(0, mii.happiness - 1); 
         }
         
         // Check for Game Over (Death)
-        if (mii.happiness <= 0) {
+        if (mii.happiness <= 0 && !mii.isDead) {
             mii.isDead = true;
             miiMessage.textContent = `💔 Oh no! ${mii.name} has passed away due to extreme sadness.`;
-            renderMiiSelector(); // Update list to remove them
         }
     });
     
-    // Re-render only the currently selected Mii and the selector list
+    renderMoney();
     renderCurrentMiiState();
     renderMiiSelector(); 
     checkIfTownIsOver();
     saveGame(); 
 }
 
-/**
- * Renders the state of the currently selected Mii to the card.
- */
 function renderCurrentMiiState() {
+    // ... (This function remains largely the same, showing the state of miiList[currentMiiIndex]) ...
     const mii = miiList[currentMiiIndex];
 
     if (!mii) {
-        // If no Mii is selected (e.g., all have died)
         miiNameDisplay.textContent = "No Active Resident";
-        // Hide/Reset other elements
         [happinessStat, hungerStat, personalityStat].forEach(el => el.textContent = '---');
         [happinessBar, hungerBar].forEach(bar => bar.style.width = '0%');
         requestBox.classList.add('hidden');
@@ -270,7 +282,6 @@ function renderCurrentMiiState() {
         return;
     }
     
-    // Update Mii Card Details
     miiNameDisplay.textContent = mii.name;
     personalityStat.textContent = mii.personality.charAt(0).toUpperCase() + mii.personality.slice(1);
     happinessStat.textContent = Math.round(mii.happiness);
@@ -279,12 +290,11 @@ function renderCurrentMiiState() {
     happinessBar.style.width = `${mii.happiness}%`;
     hungerBar.style.width = `${mii.hunger}%`;
 
-    // --- Visuals and Messages ---
     miiAvatar.classList.remove('sad', 'starving', 'sleeping');
     happinessBar.classList.remove('low');
     hungerBar.classList.remove('low');
     
-    updateSleepStateVisuals(mii); // Set sleep visuals
+    updateSleepStateVisuals(mii);
     
     if (mii.isDead) {
         miiMessage.textContent = `${mii.name} is gone. Reset the game or focus on another resident.`;
@@ -317,32 +327,119 @@ function renderCurrentMiiState() {
     }
 }
 
-function checkIfTownIsOver() {
-    if (miiList.length > 0 && miiList.every(mii => mii.isDead)) {
-        clearInterval(gameLoop);
-        gameLoop = null;
-        miiMessage.textContent = `🚨 TOWN OVER! All residents have departed Maple Island.`;
-        saveMessage.textContent = "The game has ended. Please reset to start a new town.";
-        alert("TOWN OVER! No residents remaining.");
+function renderMoney() {
+    moneyStat.textContent = gameData.money;
+}
+
+
+// --- Caretaker System ---
+
+function toggleCaretaker() {
+    gameData.isCaretakerActive = caretakerToggle.checked;
+    saveGame();
+    if (gameData.isCaretakerActive) {
+         miiMessage.textContent = "Caretaker activated! Miis will be auto-cared for, costing money each tick.";
+    } else {
+         miiMessage.textContent = "Caretaker deactivated. You must now manage Miis manually.";
     }
 }
 
-// --- Action Functions ---
+function handleCaretaker(activeMiis) {
+    let totalCost = 0;
+    
+    // Cost calculation
+    totalCost = activeMiis.length * CARETAKER_COST_PER_MII;
+    
+    if (gameData.money < totalCost) {
+        // Cannot afford caretaker fees, disable and notify
+        gameData.isCaretakerActive = false;
+        caretakerToggle.checked = false;
+        miiMessage.textContent = `🚨 Caretaker shut down! Not enough funds (Need 💰${totalCost}).`;
+        return;
+    }
+
+    // Deduct total cost
+    gameData.money -= totalCost;
+
+    // Apply care to Miis
+    activeMiis.forEach(mii => {
+        if (mii.hunger < CARETAKER_THRESHOLD) {
+            // Apply Caretaker Food (simulating purchase/use)
+            const food = ITEMS[CARETAKER_FOOD];
+            mii.hunger = Math.min(100, mii.hunger + food.hunger);
+            mii.happiness = Math.min(100, mii.happiness + food.happiness);
+        }
+        
+        if (mii.happiness < CARETAKER_THRESHOLD) {
+            // Apply Caretaker Mood (simulating purchase/use)
+            const mood = ITEMS[CARETAKER_MOOD];
+            mii.happiness = Math.min(100, mii.happiness + mood.happiness);
+        }
+    });
+}
+
+
+// --- Investment System ---
+
+function openInvestmentModal() {
+    investmentModal.classList.remove('hidden');
+    renderInvestmentModal();
+}
+
+function closeInvestmentModal() {
+    investmentModal.classList.add('hidden');
+}
+
+function renderInvestmentModal() {
+    investmentTotal.textContent = gameData.investmentTotal;
+    const passiveIncome = Math.floor(gameData.investmentTotal / INVESTMENT_RATE);
+    investmentRate.textContent = passiveIncome;
+    investmentAmountInput.value = INVESTMENT_MIN;
+}
+
+function makeInvestment() {
+    const amount = parseInt(investmentAmountInput.value);
+
+    if (isNaN(amount) || amount < INVESTMENT_MIN) {
+        alert(`Investment must be a number and at least 💰${INVESTMENT_MIN}.`);
+        return;
+    }
+
+    if (gameData.money < amount) {
+        alert(`You only have 💰${gameData.money}! Cannot invest 💰${amount}.`);
+        return;
+    }
+
+    // Process investment
+    gameData.money -= amount;
+    gameData.investmentTotal += amount;
+    
+    miiMessage.textContent = `💰 Invested 💰${amount}. Passive income rate updated!`;
+    
+    renderMoney();
+    renderInvestmentModal();
+    saveGame();
+}
+
+
+// --- Other Action/Logic Functions (Work, Sleep, Items, Store, Save/Load) ---
 
 function workForMoney() {
-    // Money is a communal resource for the town
-    if (miiList[currentMiiIndex].happiness < 30) {
-        miiMessage.textContent = `${miiList[currentMiiIndex].name} is too sad to work right now. Cheer them up!`;
+    const mii = miiList[currentMiiIndex];
+    if (!mii) return;
+
+    if (mii.happiness < 30) {
+        miiMessage.textContent = `${mii.name} is too sad to work right now. Cheer them up!`;
         return;
     }
     
     const earned = 10;
     gameData.money += earned;
-    miiList[currentMiiIndex].happiness = Math.max(0, miiList[currentMiiIndex].happiness - 5); 
+    mii.happiness = Math.max(0, mii.happiness - 5); 
     
     renderMoney();
     renderCurrentMiiState();
-    miiMessage.textContent = `${miiList[currentMiiIndex].name} worked hard and earned 💰${earned} gold for the town!`;
+    miiMessage.textContent = `${mii.name} worked hard and earned 💰${earned} gold for the town!`;
     saveGame();
 }
 
@@ -376,7 +473,7 @@ function updateSleepStateVisuals(mii) {
     }
 }
 
-// --- Item and Inventory Logic ---
+// ... (renderInventory, useItem, openStore, closeStore, renderStore, buyItem, checkIfTownIsOver remain the same) ...
 
 function renderInventory() {
     inventoryList.innerHTML = ''; 
@@ -389,7 +486,6 @@ function renderInventory() {
             const item = ITEMS[key];
             const slot = document.createElement('div');
             slot.className = 'item-slot';
-            // Only allow item use if a Mii is selected and awake
             if (currentMiiIndex >= 0 && !miiList[currentMiiIndex].isSleeping) {
                 slot.setAttribute('onclick', `useItem('${key}')`);
             }
@@ -416,14 +512,12 @@ function useItem(key) {
     if (gameData.inventory[key] > 0) {
         gameData.inventory[key] -= 1; 
 
-        // Calculate base boosts
         let hungerBoost = item.hunger || 0;
         let happinessBoost = item.happiness || 0;
         let isFulfillingRequest = false;
 
-        // Check for Request fulfillment
         if (mii.currentRequest === key) {
-            happinessBoost += 30; // Huge bonus for fulfilling the request!
+            happinessBoost += 30; 
             miiMessage.textContent = `🎉 ${mii.name} got exactly what they wanted! Huge happiness boost!`;
             mii.currentRequest = null;
             isFulfillingRequest = true;
@@ -433,7 +527,6 @@ function useItem(key) {
             mii.hunger = Math.min(100, mii.hunger + hungerBoost);
         }
         
-        // Apply personality modifier
         if (mii.personality === 'stubborn' && item.type === 'mood' && !isFulfillingRequest) {
             happinessBoost *= 0.5; 
         }
@@ -451,8 +544,6 @@ function useItem(key) {
         miiMessage.textContent = `The town inventory doesn't have any ${item.name}!`;
     }
 }
-
-// --- Store Logic (Remains the same, but uses gameData.money) ---
 
 function openStore() {
     storeModal.classList.remove('hidden');
@@ -489,7 +580,6 @@ function renderStore() {
 function buyItem(key, cost) {
     if (gameData.money >= cost) {
         gameData.money -= cost;
-        
         gameData.inventory[key] = (gameData.inventory[key] || 0) + 1;
         
         alert(`Purchased ${ITEMS[key].name} for ${cost} gold!`);
@@ -503,7 +593,18 @@ function buyItem(key, cost) {
     }
 }
 
-// --- Save/Load/Reset Functions ---
+function checkIfTownIsOver() {
+    if (miiList.length > 0 && miiList.every(mii => mii.isDead)) {
+        clearInterval(gameLoop);
+        gameLoop = null;
+        miiMessage.textContent = `🚨 TOWN OVER! All residents have departed Maple Island.`;
+        saveMessage.textContent = "The game has ended. Please reset to start a new town.";
+        alert("TOWN OVER! No residents remaining.");
+    }
+}
+
+
+// --- Save/Load/Reset ---
 
 function saveGame() {
     try {
@@ -520,14 +621,21 @@ function loadGame(savedData) {
     try {
         const loaded = JSON.parse(savedData);
         
-        // Load town data
         miiList = loaded.miiList || [];
         currentMiiIndex = loaded.currentMiiIndex || 0;
         
-        // Load Game data
         gameData.money = loaded.gameData.money || 0;
         gameData.inventory = loaded.gameData.inventory || {};
-        
+        gameData.isCaretakerActive = loaded.gameData.isCaretakerActive || false;
+        gameData.investmentTotal = loaded.gameData.investmentTotal || 0;
+
+        // Ensure we handle Miis from older saves that might be missing flags
+        miiList.forEach(mii => {
+            mii.isDead = mii.isDead || false;
+            mii.isSleeping = mii.isSleeping || false;
+            mii.currentRequest = mii.currentRequest || null;
+        });
+
         saveMessage.textContent = `Town data loaded.`;
         
     } catch (e) {
@@ -558,6 +666,9 @@ window.addEventListener('click', function(event) {
     if (event.target === newMiiModal && !newMiiModal.classList.contains('hidden')) {
         closeNewMiiModal();
     }
+    if (event.target === investmentModal && !investmentModal.classList.contains('hidden')) {
+        closeInvestmentModal();
+    }
 });
 
 document.addEventListener('keydown', function(event) {
@@ -566,6 +677,8 @@ document.addEventListener('keydown', function(event) {
             closeStore();
         } else if (!newMiiModal.classList.contains('hidden')) {
             closeNewMiiModal();
+        } else if (!investmentModal.classList.contains('hidden')) {
+            closeInvestmentModal();
         }
     }
 });
