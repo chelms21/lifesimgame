@@ -10,7 +10,7 @@ let gameData = {
     },
     isCaretakerActive: false, 
     investmentTotal: 0,
-    // --- NEW MODE/DIFFICULTY PROPERTIES ---
+    savingsTotal: 0, // NEW SAVINGS PROPERTY
     mode: 'manual', // 'manual' or 'automatic'
     difficulty: 'normal', // 'normal' or 'easy'
 }
@@ -28,6 +28,11 @@ const CARETAKER_MOOD = 'coffee';
 const CARETAKER_THRESHOLD = 40; 
 const AUTOMATIC_WORK_CHANCE = 0.15; // 15% chance to work each tick in automatic mode
 const AUTOMATIC_DATING_CHANCE = 0.05; // 5% chance to try dating/proposing each tick
+
+// --- NEW CONSTANTS ---
+const PARTY_COST = 150;
+const PARTY_HAPPINESS_BONUS = 30;
+const SAVINGS_INTEREST_RATE = 0.01; // 1% per tick
 
 // --- Relationship Constants ---
 const FRIENDSHIP_SUCCESS_CHANCE = 0.6;
@@ -84,6 +89,14 @@ const investmentRate = document.getElementById('investment-rate');
 const investmentAmountInput = document.getElementById('investment-amount'); 
 const residentListDiv = document.getElementById('resident-list'); 
 const caretakerStatusSpan = document.getElementById('caretaker-status'); 
+
+// NEW Bank Modal Elements
+const bankModal = document.getElementById('bank-modal');
+const bankCurrentMoney = document.getElementById('bank-current-money');
+const savingsTotalDisplay = document.getElementById('savings-total');
+const savingsDepositInput = document.getElementById('savings-deposit-amount');
+const savingsWithdrawInput = document.getElementById('savings-withdraw-amount');
+const partyButton = document.getElementById('party-button');
 
 // Relationship Modal Elements
 const relationshipModal = document.getElementById('relationship-modal');
@@ -204,6 +217,7 @@ function showCreationScreen() {
     newMiiModal.classList.add('hidden');
     investmentModal.classList.add('hidden'); 
     relationshipModal.classList.add('hidden');
+    bankModal.classList.add('hidden'); // NEW
     updateCreationScreenState();
 }
 
@@ -233,6 +247,7 @@ function showGameScreen() {
     newMiiModal.classList.add('hidden');
     investmentModal.classList.add('hidden');
     relationshipModal.classList.add('hidden');
+    bankModal.classList.add('hidden'); // NEW
     gameScreen.classList.remove('hidden');
     
     if (!gameLoop) {
@@ -730,8 +745,14 @@ function updateAllMiiStats() {
     if (passiveIncome > 0) {
         gameData.money += passiveIncome;
     }
+    
+    // 4. **Bank Savings Interest (NEW)**
+    if (gameData.savingsTotal > 0) {
+        const interest = Math.floor(gameData.savingsTotal * SAVINGS_INTEREST_RATE);
+        gameData.savingsTotal += interest;
+    }
 
-    // 4. **Mii Stat Decay, Relationship Buffs, and Requests**
+    // 5. **Mii Stat Decay, Relationship Buffs, and Requests**
     miiList.forEach(mii => {
         if (mii.isSleeping || mii.isDead) return; 
 
@@ -884,6 +905,104 @@ function makeInvestment() {
     renderMoney();
     renderInvestmentModal();
     saveGame();
+}
+
+
+// --- NEW Bank Savings System ---
+
+function openBankModal() {
+    bankModal.classList.remove('hidden');
+    renderBankModal();
+}
+
+function closeBankModal() {
+    bankModal.classList.add('hidden');
+}
+
+function renderBankModal() {
+    bankCurrentMoney.textContent = gameData.money;
+    savingsTotalDisplay.textContent = gameData.savingsTotal;
+    savingsDepositInput.value = INVESTMENT_MIN; 
+    savingsWithdrawInput.value = INVESTMENT_MIN;
+}
+
+function depositSavings() {
+    const amount = parseInt(savingsDepositInput.value);
+
+    if (isNaN(amount) || amount < INVESTMENT_MIN) {
+        alert(`Deposit must be a number and at least 💰${INVESTMENT_MIN}.`);
+        return;
+    }
+
+    if (gameData.money < amount) {
+        alert(`You only have 💰${gameData.money}! Cannot deposit 💰${amount}.`);
+        return;
+    }
+
+    gameData.money -= amount;
+    gameData.savingsTotal += amount;
+    
+    miiMessage.textContent = `🏦 Deposited 💰${amount} into savings. Keep earning that safe interest!`;
+    
+    renderMoney();
+    renderBankModal();
+    saveGame();
+}
+
+function withdrawSavings() {
+    const amount = parseInt(savingsWithdrawInput.value);
+
+    if (isNaN(amount) || amount < INVESTMENT_MIN) {
+        alert(`Withdrawal must be a number and at least 💰${INVESTMENT_MIN}.`);
+        return;
+    }
+
+    if (gameData.savingsTotal < amount) {
+        alert(`You only have 💰${gameData.savingsTotal} in savings! Cannot withdraw 💰${amount}.`);
+        return;
+    }
+
+    gameData.savingsTotal -= amount;
+    gameData.money += amount;
+    
+    miiMessage.textContent = `🏦 Withdrew 💰${amount} from savings.`;
+    
+    renderMoney();
+    renderBankModal();
+    saveGame();
+}
+
+
+// --- NEW Town Party Function ---
+
+function throwParty() {
+    const activeMiis = miiList.filter(mii => !mii.isDead);
+    
+    if (activeMiis.length === 0) {
+        alert("You need at least one resident to throw a party!");
+        return;
+    }
+
+    if (gameData.money < PARTY_COST) {
+        alert(`You need 💰${PARTY_COST} to throw a town party, but you only have 💰${gameData.money}!`);
+        return;
+    }
+
+    if (confirm(`Throw a party for all ${activeMiis.length} residents for 💰${PARTY_COST}? This will give a huge happiness boost!`)) {
+        gameData.money -= PARTY_COST;
+
+        activeMiis.forEach(mii => {
+            mii.happiness = Math.min(100, mii.happiness + PARTY_HAPPINESS_BONUS);
+            mii.isSleeping = false; // Party wakes everyone up!
+            mii.currentRequest = null; // They forget requests while partying
+        });
+
+        miiMessage.textContent = `🥳 PARTY TIME! Everyone's happiness increased by ${PARTY_HAPPINESS_BONUS}!`;
+        renderMoney();
+        renderCurrentMiiState();
+        renderResidentList();
+        saveGame();
+    }
 }
 
 
@@ -1071,7 +1190,6 @@ function checkIfTownIsOver() {
 
 function saveGame() {
     try {
-        // Save the new mode/difficulty properties
         const dataToSave = JSON.stringify({ miiList, gameData, currentMiiIndex }); 
         localStorage.setItem(SAVE_KEY, dataToSave);
         saveMessage.textContent = `Game saved successfully! (${new Date().toLocaleTimeString()})`;
@@ -1092,7 +1210,7 @@ function loadGame(savedData) {
         gameData.inventory = loaded.gameData.inventory || {};
         gameData.isCaretakerActive = loaded.gameData.isCaretakerActive || false;
         gameData.investmentTotal = loaded.gameData.investmentTotal || 0;
-        // --- NEW: Load mode and difficulty, defaulting to manual/normal ---
+        gameData.savingsTotal = loaded.gameData.savingsTotal || 0; // NEW: Load savings
         gameData.mode = loaded.gameData.mode || 'manual'; 
         gameData.difficulty = loaded.gameData.difficulty || 'normal';
 
@@ -1141,6 +1259,10 @@ window.addEventListener('click', function(event) {
     if (event.target === relationshipModal && !relationshipModal.classList.contains('hidden')) {
         closeRelationshipModal();
     }
+    // NEW: Close Bank Modal
+    if (event.target === bankModal && !bankModal.classList.contains('hidden')) {
+        closeBankModal();
+    }
 });
 
 document.addEventListener('keydown', function(event) {
@@ -1153,6 +1275,10 @@ document.addEventListener('keydown', function(event) {
             closeInvestmentModal();
         } else if (!relationshipModal.classList.contains('hidden')) {
             closeRelationshipModal();
+        } 
+        // NEW: Close Bank Modal on Escape
+        else if (!bankModal.classList.contains('hidden')) {
+            closeBankModal();
         }
     }
 });
