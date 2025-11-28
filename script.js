@@ -504,7 +504,7 @@ function renderRelationshipActions() {
         return;
     }
 
-    // --- Actions based on current status ---
+    // --- Actions based on current status (Breakup/Proposal) ---
     if (mii.relationship.status !== 'single') {
         const partner = miiList.find(m => m.id === mii.relationship.partnerId);
         
@@ -521,8 +521,11 @@ function renderRelationshipActions() {
     }
 
     // --- Actions for all Miis (Friendship/Dating Attempts) ---
+    
+    // An Mii is an eligible target if they are not the current Mii's partner (as the partner has specific actions).
+    // This allows dating Miis to attempt friendship with anyone else.
     const eligibleTargets = otherActiveMiis.filter(target => 
-        target.relationship.status === 'single' || target.relationship.partnerId === mii.id
+        target.id !== mii.relationship.partnerId
     );
 
     if (eligibleTargets.length > 0 && mii.relationship.status !== 'spouse') {
@@ -530,10 +533,19 @@ function renderRelationshipActions() {
             let actionType = 'Befriend';
             let actionFunction = 'attemptFriendship';
             
-            if (target.relationship.status === 'single' && mii.relationship.status === 'single' && mii.gender !== target.gender && mii.happiness > 60) {
+            const isFriend = mii.relationship.friends.includes(target.id);
+            // Dating is only possible if BOTH are single AND they are opposite genders
+            const canDate = target.relationship.status === 'single' && mii.relationship.status === 'single' && mii.gender !== target.gender && mii.happiness > 60;
+            
+            if (isFriend) {
+                // Skip friend interaction button if already friends
+                return ''; 
+            } else if (canDate) {
                  actionType = 'Ask to Date';
                  actionFunction = 'attemptDating';
             }
+            
+            // If neither 'isFriend' nor 'canDate', the default actionType/Function is 'Befriend'/'attemptFriendship'
             
             // Pass the Mii ID as a string in the onclick attribute
             return `<button onclick="${actionFunction}('${target.id}')">${actionType} ${target.name} (${target.gender === 'male' ? '♂️' : '♀️'})</button>`;
@@ -815,7 +827,8 @@ function handleAutomaticActions(activeMiis) {
                 // Try to propose
                 // Note: We use the core logic functions but don't re-open the modal
                 if (Math.random() < PROPOSAL_CHANCE * 1.5) { // Boosted proposal chance in auto mode
-                    attemptProposal(partner.id);
+                    // We must ensure the partner is not dead before attempting to propose
+                    if (!partner.isDead) attemptProposal(partner.id);
                 }
             } else if (mii.relationship.status === 'single') {
                 // Try to date a random single Mii of the opposite gender
@@ -1058,6 +1071,7 @@ function checkIfTownIsOver() {
 
 function saveGame() {
     try {
+        // Save the new mode/difficulty properties
         const dataToSave = JSON.stringify({ miiList, gameData, currentMiiIndex }); 
         localStorage.setItem(SAVE_KEY, dataToSave);
         saveMessage.textContent = `Game saved successfully! (${new Date().toLocaleTimeString()})`;
