@@ -10,10 +10,13 @@ let gameData = {
     },
     isCaretakerActive: false, 
     investmentTotal: 0,
+    // --- NEW MODE/DIFFICULTY PROPERTIES ---
+    mode: 'manual', // 'manual' or 'automatic'
+    difficulty: 'normal', // 'normal' or 'easy'
 }
 
 let gameLoop = null; 
-const SAVE_KEY = 'miiLifeSaveDataV7'; // Updated key
+const SAVE_KEY = 'miiLifeSaveDataV8'; // Updated key for new save structure
 const DECAY_RATE = 2; 
 const UPDATE_INTERVAL = 3000; 
 const REQUEST_CHANCE = 0.03; 
@@ -23,6 +26,8 @@ const CARETAKER_PURCHASE_PRICE = 500;
 const CARETAKER_FOOD = 'apple';
 const CARETAKER_MOOD = 'coffee';
 const CARETAKER_THRESHOLD = 40; 
+const AUTOMATIC_WORK_CHANCE = 0.15; // 15% chance to work each tick in automatic mode
+const AUTOMATIC_DATING_CHANCE = 0.05; // 5% chance to try dating/proposing each tick
 
 // --- Relationship Constants ---
 const FRIENDSHIP_SUCCESS_CHANCE = 0.6;
@@ -204,6 +209,20 @@ function showCreationScreen() {
 
 function startGame() {
     if (miiList.length > 0) {
+        // --- NEW: Set mode and difficulty from selectors ---
+        const modeSelect = document.getElementById('game-mode-select');
+        const difficultySelect = document.getElementById('game-difficulty-select');
+
+        gameData.mode = modeSelect.value;
+        gameData.difficulty = difficultySelect.value;
+        
+        // Apply difficulty benefits
+        if (gameData.difficulty === 'easy') {
+            gameData.isCaretakerActive = true;
+            gameData.money = Math.max(gameData.money, 100); // Set initial money to 100 if it was 50 (or less)
+            alert("Easy Mode activated: Caretaker unlocked and starting funds boosted!");
+        }
+
         currentMiiIndex = 0; 
         showGameScreen();
     }
@@ -443,7 +462,7 @@ function buyCaretaker() {
     }
 }
 
-// --- Relationship System (NEW) ---
+// --- Relationship System ---
 
 function openRelationshipModal() {
     const mii = miiList[currentMiiIndex];
@@ -544,10 +563,8 @@ function renderFriendList() {
 
 function attemptFriendship(targetId) {
     const mii = miiList[currentMiiIndex];
-    // --- FIX: Use parseInt() to match the numeric ID ---
     const target = miiList.find(m => m.id === parseInt(targetId)); 
 
-    // --- FIX: Safety check for undefined target ---
     if (!mii || !target) {
         miiMessage.textContent = "Error: Mii or target not found for interaction.";
         return;
@@ -580,10 +597,8 @@ function attemptFriendship(targetId) {
 
 function attemptDating(targetId) {
     const mii = miiList[currentMiiIndex];
-    // --- FIX: Use parseInt() to match the numeric ID ---
     const target = miiList.find(m => m.id === parseInt(targetId)); 
 
-    // --- FIX: Safety check for undefined target ---
     if (!mii || !target) {
         miiMessage.textContent = "Error: Mii or target not found for dating attempt.";
         return;
@@ -619,10 +634,8 @@ function attemptDating(targetId) {
 
 function attemptBreakup(partnerId) {
     const mii = miiList[currentMiiIndex];
-    // --- FIX: Use parseInt() to match the numeric ID ---
     const partner = miiList.find(m => m.id === parseInt(partnerId));
     
-    // --- FIX: Safety check for undefined partner ---
     if (!mii || !partner) {
         miiMessage.textContent = "Error: Mii or partner not found for breakup.";
         return;
@@ -649,10 +662,8 @@ function attemptBreakup(partnerId) {
 
 function attemptProposal(partnerId) {
     const mii = miiList[currentMiiIndex];
-    // --- FIX: Use parseInt() to match the numeric ID ---
     const partner = miiList.find(m => m.id === parseInt(partnerId));
 
-    // --- FIX: Safety check for undefined partner ---
     if (!mii || !partner) {
         miiMessage.textContent = "Error: Mii or partner not found for proposal.";
         return;
@@ -697,13 +708,18 @@ function updateAllMiiStats() {
         handleCaretaker(activeMiis);
     }
     
-    // 2. **Investment Income**
+    // 2. **Automatic Mode Actions (Work/Dating)**
+    if (gameData.mode === 'automatic') {
+        handleAutomaticActions(activeMiis);
+    }
+
+    // 3. **Investment Income**
     const passiveIncome = Math.floor(gameData.investmentTotal / INVESTMENT_RATE);
     if (passiveIncome > 0) {
         gameData.money += passiveIncome;
     }
 
-    // 3. **Mii Stat Decay, Relationship Buffs, and Requests**
+    // 4. **Mii Stat Decay, Relationship Buffs, and Requests**
     miiList.forEach(mii => {
         if (mii.isSleeping || mii.isDead) return; 
 
@@ -731,7 +747,10 @@ function updateAllMiiStats() {
         // Check for Game Over (Death)
         if (mii.happiness <= 0 && !mii.isDead) {
             mii.isDead = true;
-            miiMessage.textContent = `💔 Oh no! ${mii.name} has passed away due to extreme sadness.`;
+            // Only update the message if the dead Mii is the currently selected one
+            if (mii.id === miiList[currentMiiIndex]?.id) {
+                 miiMessage.textContent = `💔 Oh no! ${mii.name} has passed away due to extreme sadness.`;
+            }
             
             // Partner grief: Break relationship and heavily penalize happiness
             if (mii.relationship.partnerId) {
@@ -770,6 +789,45 @@ function handleCaretaker(activeMiis) {
             const mood = ITEMS[CARETAKER_MOOD];
             mii.happiness = Math.min(100, mii.happiness + mood.happiness);
             mii.currentRequest = null;
+        }
+    });
+}
+
+function handleAutomaticActions(activeMiis) {
+    activeMiis.forEach(mii => {
+        if (mii.isSleeping) return;
+
+        // 1. Automatic Working
+        if (Math.random() < AUTOMATIC_WORK_CHANCE && mii.happiness > 60) {
+            gameData.money += 10;
+            mii.happiness = Math.max(0, mii.happiness - 5);
+        }
+
+        // 2. Automatic Dating/Proposing
+        if (Math.random() < AUTOMATIC_DATING_CHANCE) {
+            const potentialTargets = activeMiis.filter(target => target.id !== mii.id);
+            if (potentialTargets.length === 0) return;
+
+            // Partner if current status is dating/spouse
+            const partner = mii.relationship.partnerId ? activeMiis.find(m => m.id === mii.relationship.partnerId) : null;
+            
+            if (mii.relationship.status === 'dating' && partner) {
+                // Try to propose
+                // Note: We use the core logic functions but don't re-open the modal
+                if (Math.random() < PROPOSAL_CHANCE * 1.5) { // Boosted proposal chance in auto mode
+                    attemptProposal(partner.id);
+                }
+            } else if (mii.relationship.status === 'single') {
+                // Try to date a random single Mii of the opposite gender
+                const dateTarget = potentialTargets
+                    .filter(t => t.relationship.status === 'single' && t.gender !== mii.gender)
+                    .sort(() => 0.5 - Math.random())[0]; // Pick random
+                
+                if (dateTarget) {
+                    // Note: We use the core logic functions but don't re-open the modal
+                    attemptDating(dateTarget.id);
+                }
+            }
         }
     });
 }
@@ -1020,17 +1078,20 @@ function loadGame(savedData) {
         gameData.inventory = loaded.gameData.inventory || {};
         gameData.isCaretakerActive = loaded.gameData.isCaretakerActive || false;
         gameData.investmentTotal = loaded.gameData.investmentTotal || 0;
+        // --- NEW: Load mode and difficulty, defaulting to manual/normal ---
+        gameData.mode = loaded.gameData.mode || 'manual'; 
+        gameData.difficulty = loaded.gameData.difficulty || 'normal';
 
         miiList.forEach(mii => {
             // Ensure compatibility with older saves
             mii.isDead = mii.isDead || false;
             mii.isSleeping = mii.isSleeping || false;
             mii.currentRequest = mii.currentRequest || null;
-            mii.gender = mii.gender || 'male'; // Default gender for old saves
+            mii.gender = mii.gender || 'male'; 
             mii.relationship = mii.relationship || { status: 'single', partnerId: null, friends: [] };
         });
 
-        saveMessage.textContent = `Town data loaded.`;
+        saveMessage.textContent = `Town data loaded. Mode: ${gameData.mode.toUpperCase()}, Difficulty: ${gameData.difficulty.toUpperCase()}.`;
         
     } catch (e) {
         saveMessage.textContent = "Error loading game data. Starting new town.";
