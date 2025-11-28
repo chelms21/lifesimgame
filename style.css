@@ -324,8 +324,6 @@ h1 {
     font-weight: bold;
 }
 
-/* ... (Keep all existing CSS from the previous version) ... */
-
 /* New CSS for Mii Selector and Modal */
 .mii-selector {
     text-align: left;
@@ -361,5 +359,54 @@ h1 {
     border-color: #ff69b4;
 }
 
-/* Ensure existing .modal and .modal-content styles apply to #new-mii-modal */
-/* (They will, since they share the .modal class) */
+/* Update Header Bar for multiple buttons */
+.header-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    font-size: 1.1em;
+    flex-wrap: wrap; /* Allow wrapping if space is tight */
+}
+
+.header-bar button {
+    /* Keep existing button style, ensure margin for separation */
+    margin: 3px 0; 
+}
+
+/* New Caretaker Management Toggle */
+.management-toggle {
+    text-align: left;
+    margin-bottom: 10px;
+    background-color: #f0f8ff; /* AliceBlue background */
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px dashed #a0d8f0;
+}
+
+.management-toggle label {
+    font-size: 0.9em;
+    font-weight: bold;
+    color: #4682b4; /* SteelBlue text */
+}
+
+.management-toggle input[type="checkbox"] {
+    margin-right: 5px;
+    transform: scale(1.2);
+}
+
+/* Investment Modal styles (Simple adjustments) */
+#investment-modal input {
+    width: 90%;
+    padding: 8px;
+    margin: 5px 0 15px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+}
+
+.small-note {
+    font-size: 0.8em;
+    color: #666;
+    margin-top: -10px;
+}
