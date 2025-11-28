@@ -1,0 +1,83 @@
+/* ... (Keep all existing CSS from the previous step) ... */
+
+/* Header Bar for Money */
+.header-bar {
+    text-align: right;
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #008000; /* Green money text */
+    margin-bottom: 15px;
+}
+
+/* Inventory Styles */
+.inventory-area {
+    margin-top: 20px;
+    padding: 10px;
+    border: 1px dashed #ff69b4;
+    border-radius: 10px;
+}
+
+.inventory-grid, .store-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 10px;
+}
+
+.item-slot {
+    background-color: #f7f7f7;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 10px;
+    width: 100px;
+    text-align: center;
+    cursor: pointer;
+    transition: background-color 0.1s;
+}
+
+.item-slot:hover {
+    background-color: #e0f7fa;
+}
+
+.item-slot.store-item {
+    background-color: #e0ffe0; /* Light green for store items */
+}
+
+.item-slot h4 {
+    margin: 5px 0;
+}
+
+.item-slot .count {
+    font-weight: bold;
+    color: #ff69b4;
+}
+
+/* Modal/Store Styles */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+}
+
+.modal-content {
+    background-color: white;
+    padding: 30px;
+    border-radius: 20px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+    width: 90%;
+    max-width: 500px;
+    text-align: center;
+}
+
+#store-money {
+    color: #008000;
+    font-weight: bold;
+}
