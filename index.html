@@ -15,6 +15,13 @@
             <p>You need at least one Mii to start your town.</p>
             <label for="mii-name-input">Mii Name:</label>
             <input type="text" id="mii-name-input" placeholder="e.g., Tom, Amy, Bob" maxlength="15">
+            
+            <label for="mii-gender-select">Gender:</label>
+            <select id="mii-gender-select">
+                <option value="male">Male ♂️</option>
+                <option value="female">Female ♀️</option>
+            </select>
+            
             <label for="mii-personality-select">Personality:</label>
             <select id="mii-personality-select">
                 <option value="easygoing">Easygoing</option>
@@ -22,6 +29,7 @@
                 <option value="laid-back">Laid-back</option>
                 <option value="stubborn">Stubborn</option>
             </select>
+            
             <button onclick="addMiiToTown()">Add Mii to Town</button>
             <hr>
             <p>Current Residents: <span id="resident-count">0</span></p>
@@ -68,7 +76,10 @@
                 </div>
                 
                 <div class="stats">
+                    <p>Gender: <span id="gender-stat"></span></p>
                     <p>Personality: <span id="personality-stat"></span></p>
+                    <p>Relationship: <span id="relationship-stat">Single</span></p> 
+                    
                     <p>❤️ Happiness: <span id="happiness-stat"></span></p>
                     <div class="bar-container"><div id="happiness-bar" class="stat-bar happy"></div></div>
                     
@@ -83,6 +94,7 @@
 
             <div class="actions">
                 <button onclick="openStore()">🛒 Maple Store</button>
+                <button onclick="openRelationshipModal()" id="relationship-button">❤️ Interact / Date</button>
                 <button onclick="toggleSleep()" id="sleep-button">🛌 Go to Sleep</button>
                 <button onclick="openNewMiiCreation()">➕ New Resident</button>
             </div>
@@ -115,6 +127,13 @@
                 <h2>Create New Resident</h2>
                 <label for="new-mii-name-input">Mii Name:</label>
                 <input type="text" id="new-mii-name-input" placeholder="e.g., Jane, Alex" maxlength="15">
+                
+                <label for="new-mii-gender-select">Gender:</label>
+                <select id="new-mii-gender-select">
+                    <option value="male">Male ♂️</option>
+                    <option value="female">Female ♀️</option>
+                </select>
+                
                 <label for="new-mii-personality-select">Personality:</label>
                 <select id="new-mii-personality-select">
                     <option value="easygoing">Easygoing</option>
@@ -138,6 +157,23 @@
                 <p class="small-note">Note: Every 💰100 invested yields 💰1/tick passive income.</p>
                 <button onclick="makeInvestment()">Invest Funds</button>
                 <button onclick="closeInvestmentModal()">Close</button>
+            </div>
+        </div>
+
+        <div id="relationship-modal" class="modal hidden">
+            <div class="modal-content">
+                <h2 id="rel-mii-name"></h2>
+                <p>Current Relationship Status: <span id="rel-status"></span></p>
+                
+                <div id="rel-actions">
+                    </div>
+                
+                <div id="rel-friendship-list" class="rel-list">
+                    <h3>Friends:</h3>
+                    <ul id="rel-friends-ul"></ul>
+                </div>
+
+                <button onclick="closeRelationshipModal()">Close</button>
             </div>
         </div>
 
