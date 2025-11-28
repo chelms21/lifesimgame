@@ -3,13 +3,12 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Maple Mii Town — Demo</title>
+  <title>Maple Mii Town — Full</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <div class="app">
     <main class="game-card" role="main" aria-labelledby="game-title">
-
       <header class="card-header">
         <h1 id="game-title">Maple Mii Town</h1>
         <div class="header-controls">
@@ -18,15 +17,15 @@
             <option value="auto">Automatic</option>
           </select>
           <button id="save-btn" class="btn secondary">Save</button>
-          <button id="reset-btn" class="btn secondary">Reset</button>
+          <button id="load-btn" class="btn secondary">Load</button>
+          <button id="export-btn" class="btn secondary">Export</button>
+          <button id="import-btn" class="btn secondary">Import</button>
         </div>
       </header>
 
-      <!-- LEFT COLUMN (avatar + stats + creation) -->
       <div class="left-col">
         <section class="mii-area">
           <div class="mii-wrap" id="mii-wrap" aria-hidden="true">
-            <!-- Inline SVG placeholder avatar -->
             <div id="mii-avatar" class="avatar-svg"></div>
           </div>
 
@@ -43,16 +42,22 @@
               <div class="label">Hunger</div>
               <div id="hunger-stat" class="value">—</div>
             </div>
+            <div class="stat">
+              <div class="label">Social</div>
+              <div id="social-stat" class="value">—</div>
+            </div>
           </div>
 
           <div class="bars">
             <div class="bar-label">Happiness</div>
             <div class="bar-track"><div id="happiness-bar" class="bar-fill" style="width:0%"></div></div>
 
-            <div class="bar-label">Hunger</div>
+            <div class="bar-label">Hunger (full = left)</div>
             <div class="bar-track"><div id="hunger-bar" class="bar-fill" style="width:0%"></div></div>
-          </div>
 
+            <div class="bar-label">Social</div>
+            <div class="bar-track"><div id="social-bar" class="bar-fill" style="width:0%"></div></div>
+          </div>
         </section>
 
         <section class="create-area">
@@ -78,16 +83,18 @@
         </section>
       </div>
 
-      <!-- RIGHT COLUMN (dialog, inventory, residents) -->
       <div class="right-col">
         <section class="dialog">
-          <div id="mii-message" class="dialog-text">Welcome to Maple Mii Town — create a Mii to begin.</div>
+          <div id="mii-message" class="dialog-text">Welcome — create a Mii to begin.</div>
           <div class="dialog-controls">
             <select id="mii-select" aria-label="Select resident"></select>
             <button id="feed-btn" class="btn">Feed</button>
             <button id="play-btn" class="btn">Play</button>
-            <button id="shop-open-btn" class="btn secondary">Store</button>
+            <button id="chat-btn" class="btn">Chat</button>
+            <button id="work-btn" class="btn secondary">Work</button>
+            <button id="sleep-btn" class="btn secondary">Toggle Sleep</button>
             <button id="party-btn" class="btn" title="Throw party (+150)">$ Party</button>
+            <button id="shop-open-btn" class="btn secondary">Store</button>
           </div>
         </section>
 
@@ -102,12 +109,24 @@
         </section>
       </div>
 
-      <!-- simple store modal -->
       <div id="store-modal" class="modal hidden" aria-hidden="true">
         <div class="modal-inner">
           <button class="modal-close" id="store-close-btn">Close</button>
           <h3>Maple Shop</h3>
           <div id="store-items" class="store-items"></div>
+        </div>
+      </div>
+
+      <!-- Import modal -->
+      <div id="import-modal" class="modal hidden" aria-hidden="true">
+        <div class="modal-inner">
+          <button class="modal-close" id="import-close-btn">Close</button>
+          <h3>Import Save</h3>
+          <textarea id="import-text" placeholder="Paste exported JSON here" rows="8" style="width:100%"></textarea>
+          <div style="margin-top:10px; display:flex; gap:8px; justify-content:flex-end;">
+            <button id="do-import-btn" class="btn">Import</button>
+            <button id="clear-import-btn" class="btn secondary">Clear</button>
+          </div>
         </div>
       </div>
 
