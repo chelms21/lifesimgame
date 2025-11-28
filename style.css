@@ -323,3 +323,43 @@ h1 {
     color: #008000;
     font-weight: bold;
 }
+
+/* ... (Keep all existing CSS from the previous version) ... */
+
+/* New CSS for Mii Selector and Modal */
+.mii-selector {
+    text-align: left;
+    margin-bottom: 10px;
+}
+
+.mii-selector label {
+    font-weight: bold;
+    margin-right: 10px;
+}
+
+.mii-selector select {
+    padding: 8px;
+    border-radius: 5px;
+    border: 1px solid #ff69b4;
+    font-size: 1em;
+    min-width: 150px;
+}
+
+/* New Mii Creation Modal */
+#new-mii-modal input, #new-mii-modal select {
+    width: 90%;
+    padding: 8px;
+    margin: 5px 0 15px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+}
+
+/* Add a line break for the creation screen elements */
+#creation-screen hr {
+    margin: 15px 0;
+    border-color: #ff69b4;
+}
+
+/* Ensure existing .modal and .modal-content styles apply to #new-mii-modal */
+/* (They will, since they share the .modal class) */
