@@ -1,4 +1,51 @@
-/* ... (Keep all existing CSS from the previous step) ... */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #ffe0f0; /* Pink/Purple background */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+}
+
+.container {
+    background-color: #ffffff;
+    padding: 30px;
+    border-radius: 20px;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    width: 350px;
+}
+
+h1 {
+    color: #ff69b4; /* Hot Pink */
+}
+
+/* Screen Management */
+.screen {
+    padding: 10px;
+    border-radius: 10px;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* Creation Screen */
+#creation-screen label {
+    display: block;
+    margin-top: 10px;
+    font-weight: bold;
+}
+
+#creation-screen input, #creation-screen select, #creation-screen button {
+    width: 90%;
+    padding: 8px;
+    margin: 5px 0 15px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+}
 
 /* Header Bar for Money */
 .header-bar {
@@ -7,6 +54,115 @@
     font-weight: bold;
     color: #008000; /* Green money text */
     margin-bottom: 15px;
+}
+
+/* Mii Card Styling */
+.mii-card {
+    border: 3px solid #ff69b4;
+    border-radius: 15px;
+    padding: 15px;
+    margin-bottom: 20px;
+    background-color: #f8f8ff; /* Ghost White */
+}
+
+/* Mii Avatar Styling (Very Basic) */
+.mii-avatar {
+    margin: 15px auto;
+    width: 80px;
+    height: 80px;
+    background-color: #fffacd; /* Lemon Chiffon for skin */
+    border-radius: 50%;
+    border: 3px solid #333;
+    position: relative;
+}
+
+.face {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.eyes {
+    width: 50px;
+    height: 15px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.eyes::before, .eyes::after {
+    content: '';
+    display: block;
+    width: 10px;
+    height: 10px;
+    background-color: #333;
+    border-radius: 50%;
+}
+
+.mouth {
+    width: 20px;
+    height: 5px;
+    background-color: #f44336;
+    border-radius: 0 0 5px 5px;
+    margin: 5px auto 0;
+}
+
+/* Stats and Bars */
+.stats p {
+    margin: 5px 0;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.bar-container {
+    background-color: #eee;
+    height: 15px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    overflow: hidden;
+}
+
+.stat-bar {
+    height: 100%;
+    transition: width 0.5s;
+}
+
+.happy { background-color: #4caf50; } /* Green for Happiness */
+.full { background-color: #ffc107; } /* Amber for Hunger */
+.low { background-color: #f44336; } /* Red for Low */
+
+
+.message-box {
+    background-color: #fffacd;
+    padding: 10px;
+    border-radius: 8px;
+    margin-top: 15px;
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-style: italic;
+    color: #333;
+    border: 1px solid #ff69b4;
+}
+
+/* Buttons */
+.actions button {
+    padding: 10px 15px;
+    margin: 5px;
+    border: none;
+    border-radius: 8px;
+    background-color: #ff69b4;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.actions button:hover {
+    background-color: #e55a9d;
 }
 
 /* Inventory Styles */
@@ -51,6 +207,18 @@
 .item-slot .count {
     font-weight: bold;
     color: #ff69b4;
+}
+
+/* Save Area */
+.save-area {
+    margin-top: 20px;
+    padding-top: 10px;
+    border-top: 1px dashed #ff69b4;
+}
+
+.save-area .message-box {
+    margin-top: 10px;
+    background-color: #e6f7ff; /* Light blue for system messages */
 }
 
 /* Modal/Store Styles */
