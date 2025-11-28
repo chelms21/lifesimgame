@@ -3,31 +3,38 @@ let mii = {
     name: 'New Mii',
     personality: 'easygoing',
     happiness: 100,
-    hunger: 100
+    hunger: 100,
 };
 
 let gameData = {
-    money: 50, // Starting money for a new game
+    money: 50, 
     inventory: {
         'apple': 2,
         'coffee': 1
-    }
+    },
+    isSleeping: false,
+    currentRequest: null // Stores the key of the requested item (e.g., 'sandwich')
 }
 
 let gameLoop = null; 
-const SAVE_KEY = 'miiLifeSaveDataV2'; 
+const SAVE_KEY = 'miiLifeSaveDataV3'; // Updated key
 const DECAY_RATE = 5; 
 const UPDATE_INTERVAL = 2000; 
+const REQUEST_CHANCE = 0.05; // 5% chance per tick to generate a request
 
 // --- Item Definitions ---
 const ITEMS = {
     // Food Items (Affects Hunger + Happiness)
     'apple': { name: 'Apple 🍎', type: 'food', cost: 10, hunger: 20, happiness: 5 },
     'sandwich': { name: 'Sandwich 🥪', type: 'food', cost: 30, hunger: 40, happiness: 10 },
+    'steak': { name: 'Gourmet Steak 🥩', type: 'food', cost: 100, hunger: 90, happiness: 20 }, // New Tiered Item
     // Mood Items (Affects only Happiness)
     'coffee': { name: 'Coffee ☕', type: 'mood', cost: 15, happiness: 20 },
     'toy_car': { name: 'Toy Car 🚗', type: 'mood', cost: 50, happiness: 40 }
 };
+
+// Items that can be requested (excluding expensive or non-consumable)
+const REQUESTABLE_ITEMS = ['apple', 'sandwich', 'coffee']; 
 
 // --- DOM Element References ---
 const creationScreen = document.getElementById('creation-screen');
@@ -45,6 +52,11 @@ const inventoryList = document.getElementById('inventory-list');
 const storeModal = document.getElementById('store-modal');
 const storeMoney = document.getElementById('store-money');
 const storeItemsDiv = document.getElementById('store-items');
+const sleepButton = document.getElementById('sleep-button');
+const miiAvatar = document.querySelector('.mii-avatar');
+const requestBox = document.getElementById('mii-request-box');
+const requestedItemName = document.getElementById('requested-item-name');
+
 
 // --- Initialization and Screen Management ---
 
@@ -71,6 +83,7 @@ function showGameScreen() {
     }
     renderInventory();
     renderMoney();
+    updateSleepStateVisuals(); // Apply sleep state immediately if loaded
 }
 
 function createMii() {
@@ -90,7 +103,9 @@ function createMii() {
 
     // Reset game data for new Mii
     gameData.money = 50;
-    gameData.inventory = { 'apple': 2 }; // Start with a couple of items
+    gameData.inventory = { 'apple': 2 }; 
+    gameData.isSleeping = false;
+    gameData.currentRequest = null;
 
     renderMiiState();
     showGameScreen();
@@ -98,9 +113,11 @@ function createMii() {
 }
 
 
-// --- Game Loop Functions ---
+// --- Core Game Loop Functions ---
 
 function updateStats() {
+    if (gameData.isSleeping || mii.happiness <= 0) return; // Stop decay if sleeping or dead
+
     // 1. Hunger always decreases
     mii.hunger = Math.max(0, mii.hunger - DECAY_RATE);
 
@@ -110,55 +127,131 @@ function updateStats() {
         happinessDecay *= 2; 
     }
     
-    // Personality effect (e.g., Stubborn Miis get sad slower)
+    // Personality effect 
     if (mii.personality === 'stubborn') {
         happinessDecay *= 0.7; 
     }
 
     mii.happiness = Math.max(0, mii.happiness - happinessDecay);
     
-    // Small chance to earn money (income simulation)
-    if (Math.random() < 0.2) { 
-        gameData.money += 1;
-        renderMoney();
+    // 3. Request Generation
+    if (!gameData.currentRequest && Math.random() < REQUEST_CHANCE && mii.happiness < 70) {
+        const itemKey = REQUESTABLE_ITEMS[Math.floor(Math.random() * REQUESTABLE_ITEMS.length)];
+        gameData.currentRequest = itemKey;
+        renderRequest();
+    }
+    
+    // 4. Request Decay (If ignored)
+    if (gameData.currentRequest) {
+        mii.happiness = Math.max(0, mii.happiness - 2); // Minor happiness drop if request active
     }
 
     renderMiiState();
     checkIfGameIsOver();
+    saveGame(); // Autosave every tick
 }
 
 function renderMiiState() {
     miiNameDisplay.textContent = mii.name;
     personalityStat.textContent = mii.personality.charAt(0).toUpperCase() + mii.personality.slice(1);
     
-    // Update numerical stats
     happinessStat.textContent = Math.round(mii.happiness);
     hungerStat.textContent = Math.round(mii.hunger);
 
-    // Update bar widths
     happinessBar.style.width = `${mii.happiness}%`;
     hungerBar.style.width = `${mii.hunger}%`;
 
-    // Reset class status before applying new ones
-    happinessBar.classList.remove('low');
-    hungerBar.classList.remove('low');
-    
-    // Message logic
+    // Reset avatar classes
+    miiAvatar.classList.remove('sad', 'starving');
+
+    // Message logic and visual status
     if (mii.happiness <= 0) {
         // Handled by checkIfGameIsOver
-    } else if (mii.hunger < 30) {
-        miiMessage.textContent = `${mii.name} is starving!`;
+    } else if (mii.hunger < 20) {
+        miiMessage.textContent = `${mii.name} is critically starving!`;
         hungerBar.classList.add('low');
-    } else if (mii.happiness < 40) {
-        miiMessage.textContent = `${mii.name} needs cheering up.`;
+        miiAvatar.classList.add('starving'); // Visual: Starving
+    } else if (mii.happiness < 30) {
+        miiMessage.textContent = `${mii.name} is extremely sad.`;
+        happinessBar.classList.add('low');
+        miiAvatar.classList.add('sad'); // Visual: Sad
+    } else if (mii.hunger < 50) {
+        miiMessage.textContent = `${mii.name} is hungry.`;
+        hungerBar.classList.add('low');
+    } else if (mii.happiness < 60) {
+        miiMessage.textContent = `${mii.name} needs attention.`;
         happinessBar.classList.add('low');
     } else {
-        miiMessage.textContent = `${mii.name} is doing okay.`;
+        miiMessage.textContent = `${mii.name} is doing great!`;
+        happinessBar.classList.remove('low');
+        hungerBar.classList.remove('low');
+    }
+    
+    // Request Message
+    if (gameData.currentRequest) {
+        renderRequest();
+    } else {
+        requestBox.classList.add('hidden');
     }
 }
 
 function renderMoney() {
     moneyStat.textContent = gameData.money;
+}
+
+// --- Action Functions ---
+
+function workForMoney() {
+    if (mii.happiness < 30) {
+        miiMessage.textContent = `${mii.name} is too sad to work right now. Cheer them up!`;
+        return;
+    }
+    
+    const earned = 10;
+    gameData.money += earned;
+    mii.happiness = Math.max(0, mii.happiness - 5); // Working is tiring!
+    
+    renderMoney();
+    renderMiiState();
+    miiMessage.textContent = `${mii.name} worked hard and earned 💰${earned} gold!`;
+    saveGame();
+}
+
+function toggleSleep() {
+    gameData.isSleeping = !gameData.isSleeping;
+    updateSleepStateVisuals();
+    
+    if (gameData.isSleeping) {
+        miiMessage.textContent = `${mii.name} is sleeping peacefully... Decay is paused.`;
+        // Give a small boost upon going to sleep
+        mii.happiness = Math.min(100, mii.happiness + 5); 
+    } else {
+        miiMessage.textContent = `${mii.name} is awake and refreshed!`;
+    }
+    renderMiiState();
+    saveGame();
+}
+
+function updateSleepStateVisuals() {
+    if (gameData.isSleeping) {
+        sleepButton.textContent = "🌅 Wake Up";
+        sleepButton.style.backgroundColor = '#4CAF50';
+        miiAvatar.classList.add('sleeping');
+    } else {
+        sleepButton.textContent = "🛌 Go to Sleep";
+        sleepButton.style.backgroundColor = '#ff69b4';
+        miiAvatar.classList.remove('sleeping');
+    }
+}
+
+function renderRequest() {
+    if (gameData.currentRequest) {
+        const item = ITEMS[gameData.currentRequest];
+        requestedItemName.textContent = item.name;
+        requestBox.classList.remove('hidden');
+    } else {
+        requestBox.classList.add('hidden');
+    }
 }
 
 // --- Item and Inventory Logic ---
@@ -174,7 +267,10 @@ function renderInventory() {
             const item = ITEMS[key];
             const slot = document.createElement('div');
             slot.className = 'item-slot';
-            slot.setAttribute('onclick', `useItem('${key}')`);
+            // Only allow item use if not sleeping
+            if (!gameData.isSleeping) {
+                slot.setAttribute('onclick', `useItem('${key}')`);
+            }
             slot.innerHTML = `
                 <h4>${item.name}</h4>
                 <p>Qty: <span class="count">${count}</span></p>
@@ -190,28 +286,40 @@ function renderInventory() {
 }
 
 function useItem(key) {
-    if (mii.happiness <= 0) return;
+    if (mii.happiness <= 0 || gameData.isSleeping) return;
 
     const item = ITEMS[key];
     
     if (gameData.inventory[key] > 0) {
         gameData.inventory[key] -= 1; // Decrease count
 
+        // Calculate base boosts
+        let hungerBoost = item.hunger || 0;
+        let happinessBoost = item.happiness || 0;
+        let isFulfillingRequest = false;
+
+        // Check for Request fulfillment
+        if (gameData.currentRequest === key) {
+            happinessBoost += 30; // Huge bonus for fulfilling the request!
+            miiMessage.textContent = `🎉 ${mii.name} got exactly what they wanted! Huge happiness boost!`;
+            gameData.currentRequest = null;
+            isFulfillingRequest = true;
+        }
+
         if (item.type === 'food') {
-            mii.hunger = Math.min(100, mii.hunger + item.hunger);
+            mii.hunger = Math.min(100, mii.hunger + hungerBoost);
         }
         
-        // Mood items and food items both boost happiness
-        let happinessBoost = item.happiness;
-        
-        // Personality check for effect strength
-        if (item.type === 'mood' && mii.personality === 'stubborn') {
-            happinessBoost /= 2; // Stubborn Miis get less boost from toys/coffee
+        // Apply personality modifier (e.g., Stubborn Miis are harder to cheer up unless hungry)
+        if (mii.personality === 'stubborn' && item.type === 'mood' && !isFulfillingRequest) {
+            happinessBoost *= 0.5; // Stubborn Miis get less boost from mood items
         }
 
         mii.happiness = Math.min(100, mii.happiness + happinessBoost);
         
-        miiMessage.textContent = `${mii.name} used the ${item.name} and feels boosted!`;
+        if (!isFulfillingRequest) {
+            miiMessage.textContent = `${mii.name} used the ${item.name}.`;
+        }
         
         renderMiiState();
         renderInventory();
@@ -221,7 +329,7 @@ function useItem(key) {
     }
 }
 
-// --- Store Logic ---
+// --- Store Logic (Remains mostly the same) ---
 
 function openStore() {
     storeModal.classList.remove('hidden');
@@ -229,7 +337,6 @@ function openStore() {
 }
 
 function closeStore() {
-    // FIX: This adds the 'hidden' class back to hide the modal
     storeModal.classList.add('hidden');
 }
 
@@ -260,14 +367,13 @@ function buyItem(key, cost) {
     if (gameData.money >= cost) {
         gameData.money -= cost;
         
-        // Add item to inventory, initialize if it doesn't exist
         gameData.inventory[key] = (gameData.inventory[key] || 0) + 1;
         
         alert(`Purchased ${ITEMS[key].name} for ${cost} gold!`);
         
         renderMoney();
         renderStore();
-        renderInventory(); // Update main screen inventory
+        renderInventory(); 
         saveGame();
     } else {
         alert("You don't have enough money!");
@@ -290,7 +396,6 @@ function checkIfGameIsOver() {
 
 function saveGame() {
     try {
-        // Save both objects
         const dataToSave = JSON.stringify({ mii, gameData }); 
         localStorage.setItem(SAVE_KEY, dataToSave);
         saveMessage.textContent = `Game saved successfully! (${new Date().toLocaleTimeString()})`;
@@ -313,6 +418,8 @@ function loadGame(savedData) {
         // Load Game data
         gameData.money = loaded.gameData.money || 0;
         gameData.inventory = loaded.gameData.inventory || {};
+        gameData.isSleeping = loaded.gameData.isSleeping || false; // Load new properties
+        gameData.currentRequest = loaded.gameData.currentRequest || null;
         
         saveMessage.textContent = `Game loaded for ${mii.name}.`;
         renderMiiState();
@@ -336,7 +443,7 @@ function resetGame() {
 }
 
 
-// --- Additional Closing Listeners (Modal Fix) ---
+// --- Additional Closing Listeners ---
 
 // 1. Close when user clicks outside the modal content area
 window.addEventListener('click', function(event) {
