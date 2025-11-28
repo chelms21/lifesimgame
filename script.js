@@ -220,9 +220,26 @@ function initGame() {
         loadGame(savedData);
         showGameScreen();
     } else {
-        showCreationScreen();
+        showCreationScreen(); // <--- FIX 1: showCreationScreen called here
     }
 }
+
+function showCreationScreen() { // <--- FIX 1: showCreationScreen function defined
+    creationScreen.classList.remove('hidden');
+    gameScreen.classList.add('hidden');
+    // Ensure all other modals are hidden too (good practice)
+    storeModal.classList.add('hidden');
+    newMiiModal.classList.add('hidden');
+    investmentModal.classList.add('hidden');
+    relationshipModal.classList.add('hidden');
+    bankModal.classList.add('hidden'); 
+
+    if (gameLoop) {
+        clearInterval(gameLoop);
+        gameLoop = null;
+    }
+}
+
 
 function showGameScreen() {
     creationScreen.classList.add('hidden');
@@ -242,6 +259,28 @@ function showGameScreen() {
     renderCaretakerStatus(); 
     renderCurrentMiiState(); // Ensures initial state is drawn
     renderResidentList(); 
+}
+
+function startGame() { // <--- FIX 2: startGame function defined
+    if (miiList.length === 0) {
+        alert("You must create at least one Mii to start the town!");
+        return;
+    }
+    
+    // Set Game Mode and Difficulty from selection
+    gameData.mode = document.getElementById('game-mode-select').value;
+    gameData.difficulty = document.getElementById('game-difficulty-select').value;
+
+    // Apply difficulty bonuses
+    if (gameData.difficulty === 'easy') {
+        gameData.money += 200;
+        if (!gameData.isCaretakerActive) {
+            gameData.isCaretakerActive = true; 
+        }
+    }
+
+    showGameScreen();
+    saveGame();
 }
 
 function updateCreationScreenState() {
