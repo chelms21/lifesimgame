@@ -8,18 +8,18 @@ let gameData = {
         'apple': 2,
         'coffee': 1
     },
-    isCaretakerActive: false, // NOW A ONE-TIME PURCHASE FLAG
+    isCaretakerActive: false, 
     investmentTotal: 0,
 }
 
 let gameLoop = null; 
-const SAVE_KEY = 'miiLifeSaveDataV6'; // Updated key
+const SAVE_KEY = 'miiLifeSaveDataV6'; 
 const DECAY_RATE = 2; 
 const UPDATE_INTERVAL = 3000; 
 const REQUEST_CHANCE = 0.03; 
 
 // --- System Constants ---
-const CARETAKER_PURCHASE_PRICE = 500; // NEW: One-time cost
+const CARETAKER_PURCHASE_PRICE = 500; 
 const CARETAKER_FOOD = 'apple';
 const CARETAKER_MOOD = 'coffee';
 const CARETAKER_THRESHOLD = 40; 
@@ -66,8 +66,88 @@ const investmentModal = document.getElementById('investment-modal');
 const investmentTotal = document.getElementById('investment-total'); 
 const investmentRate = document.getElementById('investment-rate'); 
 const investmentAmountInput = document.getElementById('investment-amount'); 
-const residentListDiv = document.getElementById('resident-list'); // NEW
-const caretakerStatusSpan = document.getElementById('caretaker-status'); // NEW
+const residentListDiv = document.getElementById('resident-list'); 
+const caretakerStatusSpan = document.getElementById('caretaker-status'); 
+
+
+// --- CORE RENDERING FUNCTIONS (Moved up to fix Reference Errors) ---
+
+function renderMoney() {
+    moneyStat.textContent = gameData.money;
+}
+
+function updateSleepStateVisuals(mii) {
+    if (!mii) return;
+    
+    if (mii.isSleeping) {
+        sleepButton.textContent = "🌅 Wake Up";
+        sleepButton.style.backgroundColor = '#4CAF50';
+        miiAvatar.classList.add('sleeping');
+    } else {
+        sleepButton.textContent = "🛌 Go to Sleep";
+        sleepButton.style.backgroundColor = '#ff69b4';
+        miiAvatar.classList.remove('sleeping');
+    }
+}
+
+function renderCurrentMiiState() {
+    const mii = miiList[currentMiiIndex];
+
+    if (!mii) {
+        miiNameDisplay.textContent = "No Active Resident";
+        [happinessStat, hungerStat, personalityStat].forEach(el => el.textContent = '---');
+        [happinessBar, hungerBar].forEach(bar => bar.style.width = '0%');
+        requestBox.classList.add('hidden');
+        miiAvatar.classList.remove('sad', 'starving', 'sleeping');
+        return;
+    }
+    
+    // Update Mii Card Details
+    miiNameDisplay.textContent = mii.name;
+    personalityStat.textContent = mii.personality.charAt(0).toUpperCase() + mii.personality.slice(1);
+    happinessStat.textContent = Math.round(mii.happiness);
+    hungerStat.textContent = Math.round(mii.hunger);
+
+    happinessBar.style.width = `${mii.happiness}%`;
+    hungerBar.style.width = `${mii.hunger}%`;
+
+    // --- Visuals and Messages ---
+    miiAvatar.classList.remove('sad', 'starving', 'sleeping');
+    happinessBar.classList.remove('low');
+    hungerBar.classList.remove('low');
+    
+    updateSleepStateVisuals(mii); // Calls the function defined above
+    
+    if (mii.isDead) {
+        miiMessage.textContent = `${mii.name} is gone. Reset the game or focus on another resident.`;
+        return;
+    }
+
+    if (mii.currentRequest) {
+        requestedItemName.textContent = ITEMS[mii.currentRequest].name;
+        requestBox.classList.remove('hidden');
+    } else {
+        requestBox.classList.add('hidden');
+    }
+
+    if (mii.hunger < 20) {
+        miiMessage.textContent = `${mii.name} is critically starving!`;
+        hungerBar.classList.add('low');
+        miiAvatar.classList.add('starving'); 
+    } else if (mii.happiness < 30) {
+        miiMessage.textContent = `${mii.name} is extremely sad.`;
+        happinessBar.classList.add('low');
+        miiAvatar.classList.add('sad'); 
+    } else if (mii.hunger < 50) {
+        miiMessage.textContent = `${mii.name} is hungry.`;
+        hungerBar.classList.add('low');
+    } else if (mii.happiness < 60) {
+        miiMessage.textContent = `${mii.name} needs attention.`;
+        happinessBar.classList.add('low');
+    } else {
+        miiMessage.textContent = `${mii.name} is doing great!`;
+    }
+}
 
 
 // --- Initialization and Screen Management ---
@@ -109,13 +189,13 @@ function showGameScreen() {
     
     renderMiiSelector();
     renderInventory();
-    renderMoney();
-    renderCaretakerStatus(); // Initial render of status
-    renderCurrentMiiState();
-    renderResidentList(); // Initial render of the list
+    renderMoney(); // Calls the function defined above
+    renderCaretakerStatus(); 
+    renderCurrentMiiState(); // Calls the function defined above
+    renderResidentList(); 
 }
 
-// ... (Mii Creation/Management functions remain the same) ...
+// --- Mii Management ---
 
 function updateCreationScreenState() {
     residentCountSpan.textContent = miiList.length;
@@ -161,7 +241,6 @@ function renderMiiSelector() {
     const activeMiis = miiList.filter(m => !m.isDead);
 
     activeMiis.forEach(mii => {
-        // Find the index in the original miiList array
         const index = miiList.findIndex(m => m.id === mii.id); 
         const option = document.createElement('option');
         option.value = index;
@@ -172,25 +251,24 @@ function renderMiiSelector() {
     if (currentMiiIndex >= 0 && miiList[currentMiiIndex] && !miiList[currentMiiIndex].isDead) {
          miiSelector.value = currentMiiIndex;
     } else if (activeMiis.length > 0) {
-        // Find the index of the first active Mii
         currentMiiIndex = miiList.findIndex(m => m.id === activeMiis[0].id);
         miiSelector.value = currentMiiIndex;
     } else {
         currentMiiIndex = -1;
     }
 
-    renderCurrentMiiState();
+    renderCurrentMiiState(); // Calls the function defined above
 }
 
 function switchMii(indexToSelect = null) {
     if (indexToSelect !== null) {
         currentMiiIndex = indexToSelect;
-        miiSelector.value = indexToSelect; // Sync dropdown
+        miiSelector.value = indexToSelect; 
     } else {
         currentMiiIndex = parseInt(miiSelector.value);
     }
     renderCurrentMiiState();
-    renderResidentList(); // Ensure the selection highlights update
+    renderResidentList(); 
 }
 
 function openNewMiiCreation() {
@@ -231,7 +309,7 @@ function addNewMii() {
     saveGame();
 }
 
-// --- NEW: Resident List Rendering ---
+// --- Resident List Rendering ---
 
 function renderResidentList() {
     residentListDiv.innerHTML = '';
@@ -242,8 +320,7 @@ function renderResidentList() {
         return;
     }
 
-    activeMiis.forEach((mii, index) => {
-        // Find the index in the original miiList array for switching
+    activeMiis.forEach(mii => {
         const originalIndex = miiList.findIndex(m => m.id === mii.id); 
         
         const card = document.createElement('div');
@@ -335,13 +412,11 @@ function updateAllMiiStats() {
     miiList.forEach(mii => {
         if (mii.isSleeping || mii.isDead) return; 
 
-        // Decay logic remains the same
         mii.hunger = Math.max(0, mii.hunger - DECAY_RATE);
         let happinessDecay = mii.hunger < 30 ? DECAY_RATE * 2 : DECAY_RATE;
         if (mii.personality === 'stubborn') happinessDecay *= 0.7; 
         mii.happiness = Math.max(0, mii.happiness - happinessDecay);
         
-        // Request Generation & Decay
         if (!mii.currentRequest && Math.random() < REQUEST_CHANCE && mii.happiness < 70) {
             mii.currentRequest = REQUESTABLE_ITEMS[Math.floor(Math.random() * REQUESTABLE_ITEMS.length)];
         }
@@ -349,48 +424,40 @@ function updateAllMiiStats() {
             mii.happiness = Math.max(0, mii.happiness - 1); 
         }
         
-        // Check for Game Over (Death)
         if (mii.happiness <= 0 && !mii.isDead) {
             mii.isDead = true;
             miiMessage.textContent = `💔 Oh no! ${mii.name} has passed away due to extreme sadness.`;
         }
     });
     
-    renderMoney();
-    renderCurrentMiiState();
+    renderMoney(); // Calls the function defined above
+    renderCurrentMiiState(); // Calls the function defined above
     renderMiiSelector(); 
-    renderResidentList(); // Update the visual list every tick
+    renderResidentList(); 
     checkIfTownIsOver();
     saveGame(); 
 }
 
 function handleCaretaker(activeMiis) {
-    // Caretaker acts on all active Miis below the threshold
     activeMiis.forEach(mii => {
         if (mii.isSleeping) return;
         
-        let cared = false;
-
         // 1. Food Check
         if (mii.hunger < CARETAKER_THRESHOLD) {
             const food = ITEMS[CARETAKER_FOOD];
             mii.hunger = Math.min(100, mii.hunger + food.hunger);
             mii.happiness = Math.min(100, mii.happiness + food.happiness);
-            mii.currentRequest = null; // Fulfill any basic requests
-            cared = true;
+            mii.currentRequest = null; 
         }
         
-        // 2. Mood Check (if still low happiness after feeding or if hunger was okay)
+        // 2. Mood Check
         if (mii.happiness < CARETAKER_THRESHOLD) {
             const mood = ITEMS[CARETAKER_MOOD];
             mii.happiness = Math.min(100, mii.happiness + mood.happiness);
             mii.currentRequest = null;
-            cared = true;
         }
     });
 }
-
-// ... (renderCurrentMiiState remains the same) ...
 
 // --- Investment System ---
 
@@ -449,7 +516,7 @@ function workForMoney() {
     gameData.money += earned;
     mii.happiness = Math.max(0, mii.happiness - 5); 
     
-    renderMoney();
+    renderMoney(); // Calls the function defined above
     renderCurrentMiiState();
     miiMessage.textContent = `${mii.name} worked hard and earned 💰${earned} gold for the town!`;
     saveGame();
@@ -469,20 +536,6 @@ function toggleSleep() {
     }
     renderCurrentMiiState();
     saveGame();
-}
-
-function updateSleepStateVisuals(mii) {
-    if (!mii) return;
-    
-    if (mii.isSleeping) {
-        sleepButton.textContent = "🌅 Wake Up";
-        sleepButton.style.backgroundColor = '#4CAF50';
-        miiAvatar.classList.add('sleeping');
-    } else {
-        sleepButton.textContent = "🛌 Go to Sleep";
-        sleepButton.style.backgroundColor = '#ff69b4';
-        miiAvatar.classList.remove('sleeping');
-    }
 }
 
 function renderInventory() {
@@ -572,7 +625,8 @@ function renderStore() {
     if (!gameData.isCaretakerActive) {
         const slot = document.createElement('div');
         slot.className = 'item-slot store-item';
-        slot.setAttribute('onclick', `buyCaretaker()`);
+        // Note: buyCaretaker function handles both store click and status click
+        slot.setAttribute('onclick', `buyCaretaker()`); 
         slot.innerHTML = `
             <h4>Caretaker System 🤖</h4>
             <p>Cost: <span class="count">💰${CARETAKER_PURCHASE_PRICE}</span></p>
