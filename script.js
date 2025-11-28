@@ -35,8 +35,8 @@ const CARETAKER_MOOD = 'coffee';
 const CARETAKER_THRESHOLD = 40; 
 const AUTOMATIC_WORK_CHANCE = 0.15; 
 const AUTOMATIC_DATING_CHANCE = 0.05; 
-const PARTY_COST = 150;
-const PARTY_HAPPINESS_BONUS = 30;
+const PARTY_COST = 150; // ADDED CONSTANT
+const PARTY_HAPPINESS_BONUS = 30; // ADDED CONSTANT
 const SAVINGS_INTEREST_RATE = 0.01; 
 
 // --- Skill & Job Constants ---
@@ -163,10 +163,13 @@ const miiSelector = document.getElementById('mii-select');
 const residentCountSpan = document.getElementById('resident-count');
 const startTownButton = document.getElementById('start-town-button');
 const newMiiModal = document.getElementById('new-mii-modal');
+
+// Investment Modal Elements
 const investmentModal = document.getElementById('investment-modal'); 
 const investmentTotal = document.getElementById('investment-total'); 
 const investmentRate = document.getElementById('investment-rate'); 
 const investmentAmountInput = document.getElementById('investment-amount'); 
+
 const residentListDiv = document.getElementById('resident-list'); 
 const caretakerStatusSpan = document.getElementById('caretaker-status'); 
 
@@ -238,10 +241,10 @@ function renderInventory() {
 }
 
 function renderMiiSelector() {
-    miiSelector.innerHTML = ''; // Clear previous options
+    miiSelector.innerHTML = ''; 
     
     miiList.forEach((mii, index) => {
-        if (!mii.isDead) { // Only show Miis that are alive
+        if (!mii.isDead) { 
             const option = document.createElement('option');
             option.value = index;
             option.textContent = mii.name;
@@ -249,15 +252,13 @@ function renderMiiSelector() {
         }
     });
     
-    // Ensure the selector is set to the current Mii if they are still active
     if (currentMiiIndex >= 0 && !miiList[currentMiiIndex]?.isDead) {
         miiSelector.value = currentMiiIndex; 
     } else if (miiList.filter(m => !m.isDead).length > 0) {
-        // Find the first non-dead Mii if the current one is dead
         currentMiiIndex = miiList.findIndex(m => !m.isDead);
         miiSelector.value = currentMiiIndex;
     } else {
-        currentMiiIndex = -1; // No active Mii
+        currentMiiIndex = -1; 
     }
 }
 
@@ -281,7 +282,6 @@ function renderCurrentMiiState() {
     const actionsDiv = document.querySelector('.actions');
 
     if (!mii || mii.isDead) {
-        // Clear screen if no Mii selected or Mii is dead
         miiNameDisplay.textContent = "No Active Resident";
         actionsDiv.innerHTML = "<p>Select a Mii to see actions.</p>";
         miiAvatar.className = 'mii-avatar'; 
@@ -313,7 +313,7 @@ function renderCurrentMiiState() {
     energyBar.style.width = `${mii.energy}%`; 
 
     // --- Visuals and Messages ---
-    miiAvatar.className = 'mii-avatar'; // Reset classes
+    miiAvatar.className = 'mii-avatar'; 
     happinessBar.classList.remove('low');
     hungerBar.classList.remove('low');
     energyBar.classList.remove('low'); 
@@ -329,7 +329,7 @@ function renderCurrentMiiState() {
         ${!mii.isChild ? `<button id="rel-button" onclick="openRelationshipModal()">Relationships ❤️</button>` : ''}
         ${!mii.isChild ? `<button id="job-button" onclick="openJobAssignmentModal()">Assign Job 💼</button>` : ''}
     `;
-    updateSleepStateVisuals(mii); // Re-run to set the dynamic button text
+    updateSleepStateVisuals(mii); 
 
     if (mii.currentRequest) {
         requestedItemName.textContent = ITEMS[mii.currentRequest].name;
@@ -485,7 +485,7 @@ function startGame() {
 
         currentMiiIndex = 0; 
         showGameScreen();
-        generateGoals(); // Generate initial goals
+        generateGoals(); 
     }
 }
 
@@ -499,10 +499,10 @@ function showGameScreen() {
         gameLoop = setInterval(updateAllMiiStats, UPDATE_INTERVAL);
     }
     
-    renderMiiSelector(); // FIX for ReferenceError
+    renderMiiSelector(); 
     renderInventory();
     renderMoney(); 
-    renderCaretakerStatus(); // FIX for missing caretaker status renderer
+    renderCaretakerStatus(); 
     renderCurrentMiiState(); 
     renderResidentList(); 
 }
@@ -592,7 +592,6 @@ function renderCaretakerStatus() {
 }
 
 function handleCaretaker(activeMiis) {
-    // Caretaker should use a version of useItem that accepts a Mii object/ID
     activeMiis.forEach(mii => {
         if (mii.isDead || mii.isSleeping || mii.isChild) return;
 
@@ -621,7 +620,7 @@ function handleCaretaker(activeMiis) {
         }
     });
 }
-// Helper function for the Caretaker/Automatic actions
+
 function useItemOnMii(mii, key) {
     if (mii.isDead || mii.isSleeping) return;
 
@@ -647,7 +646,6 @@ function useItemOnMii(mii, key) {
 
     mii.happiness = Math.min(100, mii.happiness + happinessBoost);
     
-    // Only update the message if this Mii is the active one
     if (mii.id === miiList[currentMiiIndex]?.id) {
         miiMessage.textContent = `The caretaker used ${item.name} on ${mii.name}.`;
     }
@@ -699,6 +697,50 @@ function buyItem(key) {
 }
 // --- End Store Management ---
 
+// --- Bank/Investment Modals ---
+
+function openBankModal() {
+    bankCurrentMoney.textContent = gameData.money;
+    savingsTotalDisplay.textContent = gameData.savingsTotal;
+    bankModal.classList.remove('hidden');
+}
+
+function closeBankModal() {
+    bankModal.classList.add('hidden');
+}
+
+function openInvestmentModal() {
+    investmentTotal.textContent = gameData.investmentTotal;
+    // Simple placeholder rate
+    investmentRate.textContent = '10%'; 
+    investmentModal.classList.remove('hidden');
+}
+
+function closeInvestmentModal() {
+    investmentModal.classList.add('hidden');
+}
+
+function throwParty() {
+    if (gameData.money >= PARTY_COST) {
+        if (!confirm(`Are you sure you want to throw a Town Party for 💰${PARTY_COST}? All Miis will get a Happiness boost!`)) {
+            return;
+        }
+
+        gameData.money -= PARTY_COST;
+        
+        miiList.filter(m => !m.isDead).forEach(mii => {
+            mii.happiness = Math.min(100, mii.happiness + PARTY_HAPPINESS_BONUS);
+        });
+        
+        miiMessage.textContent = `🎉 The town threw an epic party! Happiness +${PARTY_HAPPINESS_BONUS} for everyone!`;
+        renderMoney();
+        renderCurrentMiiState();
+        saveGame();
+    } else {
+        miiMessage.textContent = `Need 💰${PARTY_COST} to throw a party!`;
+    }
+}
+
 
 // --- Relationship System (Gifting) ---
 function openRelationshipModal() {
@@ -718,7 +760,7 @@ function openRelationshipModal() {
     }
     relStatus.textContent = statusText;
 
-    // Assuming renderRelationshipActions and renderFriendList are defined elsewhere
+    // These functions need to be defined to fully use this modal:
     // renderRelationshipActions();
     // renderFriendList();
     
@@ -920,7 +962,7 @@ function updateAllMiiStats() {
 
     // 3. **Caretaker System Action**
     if (gameData.isCaretakerActive) {
-        handleCaretaker(activeMiis); // FIX for handleCaretaker ReferenceError
+        handleCaretaker(activeMiis); 
     }
     
     // 4. **Automatic Mode Actions (Work/Dating)**
@@ -1070,15 +1112,20 @@ function handleRandomEvents(activeMiis) {
             const eventDef = RANDOM_EVENTS[gameData.activeEvent.key];
             miiMessage.textContent = `✅ ${eventDef.name} has concluded.`;
             
-            // Reversal effects (e.g., cure general illness)
             if (gameData.activeEvent.key === 'illness_outbreak') {
                  activeMiis.forEach(mii => mii.isIll = false);
             }
             
-            gameData.activeEvent = null;
+            gameData.activeEvent = null; 
         }
-        activeEventStatus.textContent = `${RANDOM_EVENTS[gameData.activeEvent.key].name} (${gameData.activeEvent.ticksRemaining} ticks left)`;
-        return;
+
+        // CRITICAL FIX: Only update status if activeEvent is NOT null (meaning the event hasn't just ended)
+        if (gameData.activeEvent) {
+            activeEventStatus.textContent = `${RANDOM_EVENTS[gameData.activeEvent.key].name} (${gameData.activeEvent.ticksRemaining} ticks left)`;
+            return;
+        } else {
+            activeEventStatus.textContent = 'None';
+        }
     }
     
     activeEventStatus.textContent = 'None';
