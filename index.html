@@ -29,21 +29,27 @@
         </div>
 
         <div id="game-screen" class="screen hidden">
-            <div class="header-bar">
+            
+            <div class="town-status-bar">
                 <p>💰 Money: <span id="money-stat">0</span></p>
                 <button onclick="workForMoney()">💼 Work (+$10)</button>
                 <button onclick="openInvestmentModal()">📈 Invest</button>
             </div>
             
-            <div class="management-toggle">
-                <label for="caretaker-toggle">
-                    <input type="checkbox" id="caretaker-toggle" onchange="toggleCaretaker()">
-                    Automated Caretaker (Costs 💰5/tick per Mii)
-                </label>
+            <div class="management-status">
+                <p>Caretaker Status: 
+                    <span id="caretaker-status"></span>
+                </p>
+            </div>
+
+            <div class="resident-list-area">
+                <h3>Town Residents</h3>
+                <div id="resident-list" class="resident-grid">
+                    </div>
             </div>
 
             <div class="mii-selector">
-                <label for="mii-select">Current Resident:</label>
+                <label for="mii-select">Select Mii to Interact:</label>
                 <select id="mii-select" onchange="switchMii()"></select>
             </div>
 
@@ -82,7 +88,7 @@
             </div>
             
             <div class="inventory-area">
-                <h3>🎒 Inventory (Click to use on current Mii)</h3>
+                <h3>🎒 Inventory (Click to use on selected Mii)</h3>
                 <div id="inventory-list" class="inventory-grid">
                     </div>
             </div>
