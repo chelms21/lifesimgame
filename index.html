@@ -32,6 +32,14 @@
             <div class="header-bar">
                 <p>💰 Money: <span id="money-stat">0</span></p>
                 <button onclick="workForMoney()">💼 Work (+$10)</button>
+                <button onclick="openInvestmentModal()">📈 Invest</button>
+            </div>
+            
+            <div class="management-toggle">
+                <label for="caretaker-toggle">
+                    <input type="checkbox" id="caretaker-toggle" onchange="toggleCaretaker()">
+                    Automated Caretaker (Costs 💰5/tick per Mii)
+                </label>
             </div>
 
             <div class="mii-selector">
@@ -110,6 +118,20 @@
                 </select>
                 <button onclick="addNewMii()">Add to Town</button>
                 <button onclick="closeNewMiiModal()">Cancel</button>
+            </div>
+        </div>
+
+        <div id="investment-modal" class="modal hidden">
+            <div class="modal-content">
+                <h2>📈 Town Investment Fund</h2>
+                <p>Current Funds: 💰<span id="investment-total">0</span></p>
+                <p>Passive Income: 💰<span id="investment-rate">0</span>/tick</p>
+
+                <label for="investment-amount">Amount to Invest:</label>
+                <input type="number" id="investment-amount" min="10" placeholder="Min 10 Gold">
+                <p class="small-note">Note: Every 💰100 invested yields 💰1/tick passive income.</p>
+                <button onclick="makeInvestment()">Invest Funds</button>
+                <button onclick="closeInvestmentModal()">Close</button>
             </div>
         </div>
 
