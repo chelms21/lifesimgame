@@ -27,10 +27,16 @@
         <div id="game-screen" class="screen hidden">
             <div class="header-bar">
                 <p>💰 Money: <span id="money-stat">0</span></p>
+                <button onclick="workForMoney()">💼 Work (+$10)</button>
             </div>
 
             <div class="mii-card">
                 <h2 id="mii-name"></h2>
+                
+                <div id="mii-request-box" class="request-box hidden">
+                    <p>I want a <span id="requested-item-name"></span>!</p>
+                </div>
+                
                 <div class="mii-avatar">
                     <div class="face">
                         <div class="eyes"></div>
@@ -54,10 +60,11 @@
 
             <div class="actions">
                 <button onclick="openStore()">🛒 Maple Store</button>
+                <button onclick="toggleSleep()" id="sleep-button">🛌 Go to Sleep</button>
             </div>
             
             <div class="inventory-area">
-                <h3>🎒 Inventory</h3>
+                <h3>🎒 Inventory (Click to use)</h3>
                 <div id="inventory-list" class="inventory-grid">
                     </div>
             </div>
