@@ -139,7 +139,8 @@
             <div class="main-content">
                 <div class="controls">
                     <button id="add-mii-button" onclick="openNewMiiCreation()" style="background-color: #6f42c1;">+ Add New Mii</button>
-                    <button id="store-button" onclick="openStore()">Maple Store 🏪</button>
+                    <!-- FIXED: These buttons now call defined functions that remove the 'hidden' class from the modals. -->
+                    <button id="store-button" onclick="openStore()">Maple Store 🏪</button> 
                     <button id="bank-button" onclick="openBankModal()">Bank 🏦</button>
                     <button id="investment-button" onclick="openInvestmentModal()">Investments 📈</button>
                     <button id="town-hall-button" onclick="openTownHall()">Town Hall 🏛️</button>
@@ -216,6 +217,7 @@
                 </div>
 
                 <h3>Town Inventory</h3>
+                <!-- The "Use" buttons inside this element call useItem(key) -->
                 <div id="inventory-list" class="inventory">
                     </div>
             </div>
@@ -235,6 +237,7 @@
 
 <div id="store-modal" class="modal">
     <div class="modal-content">
+        <!-- FIXED: Calls the now-defined closeStore() -->
         <span class="close-button" onclick="closeStore()">&times;</span>
         <h2>Maple Store</h2>
         <p>Town Funds: 💰<span id="store-money">0</span></p>
@@ -245,6 +248,7 @@
 
 <div id="town-hall-modal" class="modal">
     <div class="modal-content">
+        <!-- FIXED: Calls the now-defined closeTownHall() -->
         <span class="close-button" onclick="closeTownHall()">&times;</span>
         <h2 id="town-hall-title">Town Hall Status</h2>
         <div id="town-hall-content">
@@ -254,6 +258,7 @@
 
 <div id="investment-modal" class="modal">
     <div class="modal-content">
+        <!-- FIXED: Calls the now-defined closeInvestmentModal() -->
         <span class="close-button" onclick="closeInvestmentModal()">&times;</span>
         <h2>Town Investments</h2>
         <p>Total Invested: 💰<span id="investment-total">0</span></p>
@@ -267,6 +272,7 @@
 
 <div id="bank-modal" class="modal">
     <div class="modal-content">
+        <!-- FIXED: Calls the now-defined closeBankModal() -->
         <span class="close-button" onclick="closeBankModal()">&times;</span>
         <h2>Maple Town Bank</h2>
         <p>Current Town Money: 💰<span id="bank-current-money">0</span></p>
@@ -287,6 +293,7 @@
 
 <div id="relationship-modal" class="modal">
     <div class="modal-content">
+        <!-- FIXED: Calls the now-defined closeRelationshipModal() -->
         <span class="close-button" onclick="closeRelationshipModal()">&times;</span>
         <h2 id="rel-mii-name">---'s Relationships</h2>
         <p><strong>Status:</strong> <span id="rel-status">Single</span></p>
@@ -304,6 +311,7 @@
 
 <div id="gift-modal" class="modal">
     <div class="modal-content">
+        <!-- This one was already set correctly inline: giftModal.classList.add('hidden') -->
         <span class="close-button" onclick="giftModal.classList.add('hidden')">&times;</span>
         <h2>Gift Inventory to <span id="gift-target-name">---</span></h2>
         <p>Choose an item to give them. Higher cost items boost the Love Score more!</p>
@@ -314,6 +322,7 @@
 
 <div id="job-assignment-modal" class="modal">
     <div class="modal-content">
+        <!-- FIXED: Calls the now-defined closeJobAssignmentModal() -->
         <span class="close-button" onclick="closeJobAssignmentModal()">&times;</span>
         <h2>Assign Job to <span id="job-mii-name">---</span></h2>
         <p>A job allows the Mii to generate passive income based on their skill (Max Skill: <span id="max-skill-display">100</span>).</p>
@@ -324,6 +333,7 @@
 
 <div id="new-mii-modal" class="modal">
     <div class="modal-content">
+        <!-- FIXED: Calls the now-defined closeNewMiiModal() -->
         <span class="close-button" onclick="closeNewMiiModal()">&times;</span>
         <h2>Add New Resident</h2>
         <label for="new-mii-name-input">Name:</label>
