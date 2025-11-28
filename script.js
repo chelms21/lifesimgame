@@ -40,1345 +40,130 @@ const PARTY_HAPPINESS_BONUS = 30;
 const SAVINGS_INTEREST_RATE = 0.01; 
 
 // --- Skill & Job Constants ---
-const JOB_STATS = {
-    'none': { income: 0, skillCap: 0, skillStat: 'none' },
-    'cashier': { income: 5, skillCap: 20, skillStat: 'intellect' },
-    'programmer': { income: 15, skillCap: 100, skillStat: 'intellect' },
-    'chef': { income: 10, skillCap: 50, skillStat: 'creativity' },
-    'artist': { income: 8, skillCap: 40, skillStat: 'creativity' },
-    'construction': { income: 12, skillCap: 70, skillStat: 'strength' },
-};
-
-
-// --- Item Constants ---
-const ITEMS = {
-    'apple': { name: 'Apple 🍎', type: 'food', happiness: 5, hunger: 20, cost: 5, description: 'Basic food to fill hunger.' },
-    'steak': { name: 'Steak 🥩', type: 'food', happiness: 20, hunger: 50, cost: 25, description: 'A hearty meal for maximum satisfaction.' },
-    'medicine': { name: 'Medicine 💊', type: 'mood', happiness: 10, cost: 50, cureIllness: true, description: 'Cures illness and gives a small boost.' },
-    'coffee': { name: 'Coffee ☕', type: 'mood', happiness: 5, cost: 10, description: 'Gives a small energy boost.' },
-    'book': { name: 'Book 📚', type: 'skill', skillBoost: 5, cost: 40, description: 'Boosts intellect skill.' },
-    'paint_set': { name: 'Paint Set 🎨', type: 'skill', skillBoost: 5, cost: 40, description: 'Boosts creativity skill.' },
-    'weights': { name: 'Weights 🏋️', type: 'skill', skillBoost: 5, cost: 40, description: 'Boosts strength skill.' },
-    'concert_ticket': { name: 'Concert Ticket 🎫', type: 'mood', happiness: 40, cost: 100, description: 'A huge happiness booster.' },
-};
-
-// --- Town Hall Research Constants ---
-const RESEARCH_OPTIONS = {
-    'bank_upgrade': {
-        name: "Bank Upgrade (2% Interest)",
-        cost: 200,
-        prerequisite: null,
-        description: "Increases bank savings interest to 2%.",
-        effect: () => { gameData.savingsInterestRate = 0.02; }
-    },
-    'auto_work': {
-        name: "Automatic Work Assignment",
-        cost: 500,
-        prerequisite: null,
-        description: "Miis can autonomously decide to work to earn money.",
-        effect: () => { /* Logic integrated into town loop */ }
-    },
-    'dating_app': {
-        name: "Town Dating Service",
-        cost: 1000,
-        prerequisite: null,
-        description: "Miis can autonomously search for romantic partners.",
-        effect: () => { /* Logic integrated into town loop */ }
-    }
-};
-
-// --- Mii Personality Constants ---
-const PERSONALITY_TRAITS = {
-    normal: { emoji: '😊', workEfficiency: 1.0, datingChance: 1.0, decayRate: 1.0 },
-    stubborn: { emoji: '😠', workEfficiency: 1.2, datingChance: 0.8, decayRate: 1.2 }, // Harder to please, more efficient
-    friendly: { emoji: '😀', workEfficiency: 0.8, datingChance: 1.5, decayRate: 0.8 }, // Easier to please, less efficient
-};
+const MAX_SKILL = 100;
+const SKILL_GAIN_RATE = 5;
+const JOB_PAY_BASE = 10;
+const JOB_PAY_MULTIPLIER = 0.5;
 
 // --- DOM Elements ---
-const creationScreen = document.getElementById('creation-screen');
-const gameScreen = document.getElementById('game-screen');
-const residentCount = document.getElementById('resident-count');
-const startTownButton = document.getElementById('start-town-button');
-
-const moneyStat = document.getElementById('money-stat');
-const miiSelect = document.getElementById('mii-select');
-const miiName = document.getElementById('mii-name');
-const miiMessage = document.getElementById('mii-message');
-const saveMessage = document.getElementById('save-message');
-const residentList = document.getElementById('resident-list');
-const caretakerStatus = document.getElementById('caretaker-status');
-
-const happinessBar = document.getElementById('happiness-bar');
-const hungerBar = document.getElementById('hunger-bar');
-const energyBar = document.getElementById('energy-bar');
-const happinessStat = document.getElementById('happiness-stat');
-const hungerStat = document.getElementById('hunger-stat');
-const energyStat = document.getElementById('energy-stat');
-
+const mainScreen = document.getElementById('main-screen');
+const miiListElement = document.getElementById('mii-list');
+const moneyDisplay = document.getElementById('money-display');
 const inventoryList = document.getElementById('inventory-list');
-const miiRequestBox = document.getElementById('mii-request-box');
-const requestedItemName = document.getElementById('requested-item-name');
+const saveMessage = document.getElementById('save-message');
+const statusMessage = document.getElementById('status-message');
+const clockDisplay = document.getElementById('clock-display');
+const seasonDisplay = document.getElementById('season-display');
+const goalsList = document.getElementById('goals-list');
 
+// Modals
 const storeModal = document.getElementById('store-modal');
-const townHallModal = document.getElementById('town-hall-modal');
+const newMiiModal = document.getElementById('new-mii-modal');
 const investmentModal = document.getElementById('investment-modal');
-const bankModal = document.getElementById('bank-modal');
 const relationshipModal = document.getElementById('relationship-modal');
+const bankModal = document.getElementById('bank-modal');
+const townHallModal = document.getElementById('town-hall-modal');
 const jobAssignmentModal = document.getElementById('job-assignment-modal');
 const giftModal = document.getElementById('gift-modal');
 
-const currentSeasonDisplay = document.getElementById('current-season');
-const seasonTicksRemainingDisplay = document.getElementById('season-ticks-remaining');
-const goalsList = document.getElementById('goals-list');
+// Creation Screen
+const creationScreen = document.getElementById('creation-screen');
+const createMiiBtn = document.getElementById('create-mii-btn');
+const newMiiNameInput = document.getElementById('new-mii-name');
+const newMiiPersonalitySelect = document.getElementById('new-mii-personality');
+const newMiiGenderSelect = document.getElementById('new-mii-gender');
 
+// Investment Modal
+const investmentAmountInput = document.getElementById('investment-amount');
+const investmentReturnDisplay = document.getElementById('investment-return');
+const investmentTotalDisplay = document.getElementById('investment-total-display');
+const investmentStatus = document.getElementById('investment-status');
 
-// --- Mii Class and Setup ---
-class Mii {
-    constructor(id, name, gender, personality) {
-        this.id = id;
-        this.name = name;
-        this.gender = gender;
-        this.personality = personality;
-        this.age = 18;
-        this.isChild = false;
-        
-        // Stats (0-100)
-        this.happiness = 100;
-        this.hunger = 100;
-        this.energy = 100;
+// Bank Modal
+const savingsAmountInput = document.getElementById('savings-amount');
+const savingsInterestDisplay = document.getElementById('savings-interest');
+const savingsTotalDisplay = document.getElementById('savings-total-display');
 
-        // Skills (0-100)
-        this.intellect = Math.floor(Math.random() * 20) + 10;
-        this.creativity = Math.floor(Math.random() * 20) + 10;
-        this.strength = Math.floor(Math.random() * 20) + 10;
+// Store Modal
+const storeItemsList = document.getElementById('store-items-list');
+const caretakerStatus = document.getElementById('caretaker-status');
 
-        this.job = 'none';
-        this.skill = 0; // The active skill level for the current job
+// Town Hall Modal
+const townHallContent = document.getElementById('town-hall-content');
+const researchList = document.getElementById('research-list');
+const townHallMoneyInput = document.getElementById('town-hall-money');
 
-        this.isSleeping = false;
-        this.isDead = false;
-        this.isIll = false;
-        this.currentRequest = null; // Item key
+// Job Assignment Modal
+const jobMiiName = document.getElementById('job-mii-name');
+const jobAssignmentSelect = document.getElementById('job-assignment-select');
 
-        // Relationships
-        this.relationship = {
-            partnerId: null,
-            loveScore: 0,
-            friends: {} // { miiId: score (0-100) }
-        };
-    }
-    
-    get avatar() {
-        if (this.isDead) return '💀';
-        if (this.isSleeping) return '💤';
-        if (this.isIll) return '🤒';
-        if (this.hunger < 20) return '😩';
-        if (this.happiness < 30) return '😔';
-        return PERSONALITY_TRAITS[this.personality].emoji;
-    }
-    
-    get skillStatName() {
-        const jobStat = JOB_STATS[this.job].skillStat;
-        if (jobStat === 'intellect') return 'Intellect';
-        if (jobStat === 'creativity') return 'Creativity';
-        if (jobStat === 'strength') return 'Strength';
-        return 'N/A';
-    }
+// Relationship Modal
+const miiNameRel = document.getElementById('mii-name-rel');
+const relationshipList = document.getElementById('relationship-list');
 
-    get skillStatValue() {
-        const jobStat = JOB_STATS[this.job].skillStat;
-        return this[jobStat];
-    }
+// Gift Modal
+const giftMiiName = document.getElementById('gift-mii-name');
+const giftSelect = document.getElementById('gift-select');
 
-    // Helper to calculate income based on skill and job
-    calculateIncome() {
-        const baseIncome = JOB_STATS[this.job].income;
-        const skillFactor = this.skillStatValue / 100;
-        const efficiency = PERSONALITY_TRAITS[this.personality].workEfficiency;
-        
-        return Math.floor(baseIncome * skillFactor * efficiency);
-    }
-}
-
-// --- Initialization ---
-
-// Elements must be defined before calling init
-const elements = {
-    miiNameInput: document.getElementById('mii-name-input'),
-    miiGenderSelect: document.getElementById('mii-gender-select'),
-    miiPersonalitySelect: document.getElementById('mii-personality-select'),
-    newMiiNameInput: document.getElementById('new-mii-name-input'),
-    newMiiGenderSelect: document.getElementById('new-mii-gender-select'),
-    newMiiPersonalitySelect: document.getElementById('new-mii-personality-select'),
+// --- Game Data Structures ---
+const INVENTORY_ITEMS = {
+    apple: { name: 'Apple', price: 5, happiness: 10, energy: 5 },
+    coffee: { name: 'Coffee', price: 15, happiness: 5, energy: 20 },
+    book: { name: 'Skill Book', price: 50, skill: 15 },
+    flower: { name: 'Flower', price: 20, love: 10 },
+    music_player: { name: 'Music Player', price: 100, happiness: 25 },
 };
 
-document.addEventListener('DOMContentLoaded', init);
-
-function init() {
-    loadGame();
-}
-
-function startGame() {
-    gameData.mode = document.getElementById('game-mode-select').value;
-    gameData.difficulty = document.getElementById('game-difficulty-select').value;
-    
-    // Set initial money based on difficulty
-    if (gameData.difficulty === 'easy') {
-        gameData.money = 500;
-        gameData.isCaretakerActive = true; 
-    } else {
-        gameData.money = 50;
-        gameData.isCaretakerActive = false;
-    }
-
-    // Assign initial job to the first Mii
-    if (miiList.length > 0) {
-        miiList[0].job = 'cashier';
-        miiList[0].skill = miiList[0].intellect;
-    }
-    
-    creationScreen.classList.add('hidden');
-    gameScreen.classList.remove('hidden');
-    
-    // Select the first Mii automatically
-    if (miiList.length > 0) {
-        currentMiiIndex = 0;
-        renderGame();
-    } else {
-        renderGame(); // Still render to show empty stats
-    }
-    
-    startTownLoop();
-    saveGame();
-}
-
-function showCreationScreen() {
-    creationScreen.classList.remove('hidden');
-    gameScreen.classList.add('hidden');
-    updateCreationScreen();
-}
-
-function updateCreationScreen() {
-    residentCount.textContent = miiList.length;
-    startTownButton.disabled = miiList.length === 0;
-}
-
-function addMiiToTown() {
-    const name = elements.miiNameInput.value.trim();
-    const gender = elements.miiGenderSelect.value;
-    const personality = elements.miiPersonalitySelect.value;
-    
-    if (name.length < 2) {
-        alert("Please enter a valid name.");
-        return;
-    }
-
-    const newMii = new Mii(Date.now().toString() + Math.random().toFixed(2), name, gender, personality);
-    miiList.push(newMii);
-    elements.miiNameInput.value = '';
-    updateCreationScreen();
-}
-
-function addNewMii() {
-    const name = elements.newMiiNameInput.value.trim();
-    const gender = elements.newMiiGenderSelect.value;
-    const personality = elements.newMiiPersonalitySelect.value;
-    
-    if (name.length < 2) {
-        alert("Please enter a valid name.");
-        return;
-    }
-
-    const newMii = new Mii(Date.now().toString() + Math.random().toFixed(2), name, gender, personality);
-    miiList.push(newMii);
-    elements.newMiiNameInput.value = '';
-    
-    closeNewMiiModal();
-    renderGame();
-    saveGame();
-}
-
-
-// --- Main Game Loop ---
-
-function startTownLoop() {
-    if (gameLoop) {
-        clearInterval(gameLoop);
-    }
-    gameLoop = setInterval(gameTick, UPDATE_INTERVAL);
-}
-
-function gameTick() {
-    gameData.gameTickCount++;
-    
-    miiList.forEach(mii => {
-        if (mii.isDead) return;
-
-        // 1. Stat Decay
-        const decayFactor = PERSONALITY_TRAITS[mii.personality].decayRate;
-        if (!mii.isSleeping) {
-            mii.hunger = Math.max(0, mii.hunger - DECAY_RATE * decayFactor);
-            mii.energy = Math.max(0, mii.energy - ENERGY_DECAY_RATE * decayFactor);
-        }
-        mii.happiness = Math.max(0, mii.happiness - (DECAY_RATE * 0.5) * decayFactor);
-
-        // 2. Health & Status Checks
-        if (mii.hunger === 0 || mii.happiness === 0) {
-            mii.isDead = true;
-            miiMessage.textContent = `${mii.name} has passed away due to neglect. 😢`;
-            if (currentMiiIndex > -1 && miiList[currentMiiIndex].id === mii.id) {
-                currentMiiIndex = -1; // Deselect dead Mii
-            }
-            return;
-        }
-        
-        // 3. Status Effects
-        if (mii.hunger < 20 || mii.energy < 20) {
-             if (Math.random() < 0.05) {
-                mii.isIll = true; // Chance to get sick if stats are too low
-             }
-        } else if (mii.isIll && Math.random() < 0.02) {
-            // Chance to recover naturally, but slow
-            mii.isIll = false;
-        }
-
-        // 4. Job Income (Passive)
-        if (mii.job !== 'none' && !mii.isSleeping && !mii.isIll) {
-            const income = mii.calculateIncome();
-            gameData.money += income;
-        }
-        
-        // 5. Mii Request Check
-        if (mii.currentRequest === null && Math.random() < REQUEST_CHANCE) {
-            const potentialRequests = Object.keys(ITEMS).filter(key => ITEMS[key].type !== 'skill');
-            mii.currentRequest = potentialRequests[Math.floor(Math.random() * potentialRequests.length)];
-            if (currentMiiIndex > -1 && miiList[currentMiiIndex].id === mii.id) {
-                renderCurrentMiiState(); // Update request box if this Mii is selected
-            }
-        }
-        
-        // 6. Automatic Actions (if mode is automatic or caretaker active)
-        if (gameData.mode === 'automatic' || gameData.isCaretakerActive) {
-            automaticMiiAction(mii);
-        }
-
-        // 7. Relationship Decay
-        if (mii.relationship.partnerId && mii.relationship.loveScore > 0) {
-            mii.relationship.loveScore = Math.max(0, mii.relationship.loveScore - 1);
-        }
-        for (const friendId in mii.relationship.friends) {
-            mii.relationship.friends[friendId] = Math.max(0, mii.relationship.friends[friendId] - 1);
-        }
-    });
-
-    // 8. Town Investment/Savings Interest
-    if (gameData.savingsTotal > 0) {
-        const interest = Math.floor(gameData.savingsTotal * (gameData.researchCompleted.includes('bank_upgrade') ? 0.02 : SAVINGS_INTEREST_RATE));
-        gameData.savingsTotal += interest;
-    }
-    gameData.money += Math.floor(gameData.investmentTotal * 0.05);
-
-    // 9. Season Check
-    if (gameData.gameTickCount % 50 === 0) {
-        advanceSeason();
-        processGoals();
-    }
-    
-    // 10. Render and Save
-    renderGame();
-    saveGame();
-}
-
-function automaticMiiAction(mii) {
-    // Caretaker acts if Mii stats are low (only applies if caretaker is active)
-    if (gameData.isCaretakerActive) {
-        if (mii.hunger < CARETAKER_THRESHOLD && gameData.inventory[CARETAKER_FOOD] > 0) {
-            mii.hunger = Math.min(100, mii.hunger + ITEMS[CARETAKER_FOOD].hunger);
-            gameData.inventory[CARETAKER_FOOD]--;
-            miiMessage.textContent = `Caretaker fed ${mii.name} an ${ITEMS[CARETAKER_FOOD].name}.`;
-            return;
-        }
-        if (mii.happiness < CARETAKER_THRESHOLD && gameData.inventory[CARETAKER_MOOD] > 0) {
-            mii.happiness = Math.min(100, mii.happiness + ITEMS[CARETAKER_MOOD].happiness);
-            gameData.inventory[CARETAKER_MOOD]--;
-            miiMessage.textContent = `Caretaker cheered up ${mii.name} with a ${ITEMS[CARETAKER_MOOD].name}.`;
-            return;
-        }
-    }
-    
-    // Automatic Mode Logic
-    if (gameData.mode === 'automatic' && !mii.isSleeping && !mii.isIll) {
-        // Work
-        if (mii.energy > 30 && mii.job !== 'none' && Math.random() < AUTOMATIC_WORK_CHANCE) {
-            work(miiList.indexOf(mii));
-            return;
-        }
-        
-        // Sleep
-        if (mii.energy < 40 && !mii.isSleeping) {
-            mii.isSleeping = true;
-            miiMessage.textContent = `${mii.name} went to sleep to recover energy.`;
-            return;
-        }
-        
-        // Dating (if research is complete)
-        if (gameData.researchCompleted.includes('dating_app') && mii.relationship.partnerId === null && Math.random() < AUTOMATIC_DATING_CHANCE) {
-            findPartner(mii.id);
-        }
-    }
-}
-
-function advanceSeason() {
-    const seasons = ['spring', 'summer', 'autumn', 'winter'];
-    const currentIndex = seasons.indexOf(gameData.currentSeason);
-    const nextIndex = (currentIndex + 1) % seasons.length;
-    gameData.currentSeason = seasons[nextIndex];
-    generateGoals(); // New goals every season
-}
-
-function generateGoals() {
-    gameData.currentGoals = [];
-    const availableGoals = [
-        { type: 'money', target: 500, description: 'Earn 500 Town Money.' },
-        { type: 'residents', target: 5, description: 'Have 5 or more town residents.' },
-        { type: 'skill', target: 50, stat: 'intellect', description: 'Raise one Mii\'s Intellect skill to 50.' },
-        { type: 'research', target: 1, description: 'Complete 1 Town Hall Research.' },
-    ];
-
-    // Pick 2 random, unique goals
-    const goalsToPick = [];
-    while (goalsToPick.length < 2 && availableGoals.length > 0) {
-        const index = Math.floor(Math.random() * availableGoals.length);
-        goalsToPick.push(availableGoals.splice(index, 1)[0]);
-    }
-    
-    gameData.currentGoals = goalsToPick.map(g => ({ ...g, completed: false }));
-}
-
-function processGoals() {
-    gameData.currentGoals.forEach(goal => {
-        if (goal.completed) return;
-
-        let isCompleted = false;
-        switch(goal.type) {
-            case 'money':
-                if (gameData.money >= goal.target) isCompleted = true;
-                break;
-            case 'residents':
-                if (miiList.filter(m => !m.isDead).length >= goal.target) isCompleted = true;
-                break;
-            case 'skill':
-                if (miiList.some(m => !m.isDead && m[goal.stat] >= goal.target)) isCompleted = true;
-                break;
-            case 'research':
-                if (gameData.researchCompleted.length >= goal.target) isCompleted = true;
-                break;
-        }
-
-        if (isCompleted) {
-            goal.completed = true;
-            gameData.money += 100; // Reward for goal completion
-        }
-    });
-}
-
-
-// --- Actions ---
-
-function work(index = currentMiiIndex) {
-    const mii = miiList[index];
-    if (!mii || mii.isDead) return;
-
-    if (mii.isSleeping) {
-        miiMessage.textContent = `${mii.name} is sleeping! Wake them up first.`;
-        return;
-    }
-    
-    if (mii.energy < 15) {
-        miiMessage.textContent = `${mii.name} is too tired to work! They need to rest or drink coffee.`;
-        return;
-    }
-
-    if (mii.job === 'none') {
-        miiMessage.textContent = `${mii.name} needs a job assigned at the Town Hall first!`;
-        return;
-    }
-
-    const income = mii.calculateIncome();
-    const energyCost = 15;
-    
-    mii.energy = Math.max(0, mii.energy - energyCost);
-    gameData.money += income;
-    
-    // Skill gains are tied to job/skill type
-    const skillName = JOB_STATS[mii.job].skillStat;
-    const skillCap = JOB_STATS[mii.job].skillCap;
-
-    if (mii[skillName] < skillCap) {
-        mii[skillName] = Math.min(skillCap, mii[skillName] + 1);
-        miiMessage.textContent = `${mii.name} earned 💰${income} and gained skill! (${mii.skillStatName}: ${mii[skillName]})`;
-    } else {
-        miiMessage.textContent = `${mii.name} earned 💰${income}. (Skill Maxed for this job)`;
-    }
-
-    renderCurrentMiiState();
-    saveGame();
-}
-
-function sleep(index = currentMiiIndex) {
-    const mii = miiList[index];
-    if (!mii || mii.isDead) return;
-
-    if (mii.isSleeping) {
-        // Wake up
-        mii.isSleeping = false;
-        mii.energy = Math.min(100, mii.energy + 30); // Wake up rested
-        miiMessage.textContent = `${mii.name} woke up feeling refreshed! (+30 Energy)`;
-    } else {
-        // Go to sleep
-        mii.isSleeping = true;
-        miiMessage.textContent = `${mii.name} went to sleep. 😴`;
-    }
-    renderCurrentMiiState();
-    saveGame();
-}
-
-function throwParty() {
-    if (gameData.activeEvent !== null) {
-        miiMessage.textContent = "An event is already active in town!";
-        return;
-    }
-
-    if (gameData.money < PARTY_COST) {
-        miiMessage.textContent = `You need 💰${PARTY_COST} to throw a party!`;
-        return;
-    }
-
-    gameData.money -= PARTY_COST;
-    gameData.activeEvent = {
-        name: "Town Festival",
-        duration: 5, // 5 ticks
-        effect: (mii) => {
-            mii.happiness = Math.min(100, mii.happiness + PARTY_HAPPINESS_BONUS);
-            mii.energy = Math.min(100, mii.energy + 10);
-            mii.isSleeping = false; // Party wakes Miis up
-        }
-    };
-    
-    // Apply initial effect
-    miiList.forEach(mii => {
-        if (!mii.isDead) gameData.activeEvent.effect(mii);
-    });
-
-    miiMessage.textContent = `🥳 The Town Festival has begun! Everyone's happiness is boosted!`;
-    renderGame();
-    saveGame();
-}
-
-// --- Item Usage (Fixed logic and added debugging) ---
-function useItem(key) {
-    console.log(`[DEBUG] Attempting to use item: ${key}`); // Requested Debug Log
-    
-    const mii = miiList[currentMiiIndex];
-    
-    // FIX: Check currentMiiIndex explicitly, which is -1 if no Mii is selected
-    if (currentMiiIndex === -1 || !mii) { 
-        miiMessage.textContent = "⚠️ Please select a resident to use an item on.";
-        console.error("[DEBUG] useItem failed: No Mii selected (currentMiiIndex is -1 or Mii undefined).");
-        return;
-    }
-    if (mii.isDead) {
-        miiMessage.textContent = `${mii.name} is deceased and cannot use items.`;
-        return;
-    }
-    if (mii.isSleeping) {
-        miiMessage.textContent = `${mii.name} is sleeping 😴 and cannot use items.`;
-        return;
-    }
-
-    const item = ITEMS[key];
-    
-    if (gameData.inventory[key] > 0) {
-        console.log(`[DEBUG] Inventory count: ${gameData.inventory[key]}. Proceeding with usage.`);
-        
-        gameData.inventory[key] -= 1; 
-
-        let isFulfillingRequest = mii.currentRequest === key;
-        let happinessBoost = item.happiness || 0;
-        
-        if (item.cureIllness && mii.isIll) {
-            mii.isIll = false;
-            miiMessage.textContent = `${mii.name} feels much better after taking the Medicine!`;
-            happinessBoost += 20; 
-        }
-
-        if (isFulfillingRequest) {
-            happinessBoost += 30; 
-            miiMessage.textContent = `🎉 ${mii.name} got exactly what they wanted! Huge happiness boost!`;
-            mii.currentRequest = null;
-        }
-
-        if (item.type === 'food') {
-            mii.hunger = Math.min(100, mii.hunger + (item.hunger || 0));
-        }
-        
-        if (key === 'coffee') {
-            // Apply energy boost
-            mii.energy = Math.min(100, mii.energy + 20); 
-        }
-        
-        if (item.type === 'skill') {
-            const skillName = (key === 'book') ? 'intellect' : (key === 'paint_set' ? 'creativity' : 'strength');
-            mii[skillName] = Math.min(100, mii[skillName] + (item.skillBoost || 5));
-            miiMessage.textContent = `${mii.name} studied the ${item.name} and gained ${skillName} skill!`;
-        }
-
-        if (mii.personality === 'stubborn' && item.type === 'mood' && !isFulfillingRequest) {
-            happinessBoost *= 0.5; // Stubborn Miis dislike generic mood items
-        }
-
-        mii.happiness = Math.min(100, mii.happiness + happinessBoost);
-        
-        if (!isFulfillingRequest && !item.cureIllness && item.type !== 'skill') {
-            miiMessage.textContent = `${mii.name} used the ${item.name}.`;
-        }
-        
-        renderCurrentMiiState();
-        renderInventory();
-        saveGame();
-    } else {
-        miiMessage.textContent = `The town inventory doesn't have any ${item.name}!`;
-        console.warn(`[DEBUG] Inventory empty for item: ${key}`);
-    }
-}
-
-
-// --- Money & Investment ---
-
-function buyItem(key) {
-    const item = ITEMS[key];
-    if (gameData.money >= item.cost) {
-        gameData.money -= item.cost;
-        gameData.inventory[key] = (gameData.inventory[key] || 0) + 1;
-        document.getElementById('store-money').textContent = gameData.money;
-        renderInventory();
-        renderGame();
-        saveGame();
-        miiMessage.textContent = `Purchased ${item.name} for 💰${item.cost}.`;
-    } else {
-        alert("Not enough money!");
-    }
-}
-
-function makeInvestment() {
-    const amountInput = document.getElementById('investment-amount');
-    const amount = parseInt(amountInput.value);
-
-    if (isNaN(amount) || amount < 10) {
-        alert("Investment must be at least 10.");
-        return;
-    }
-    if (gameData.money < amount) {
-        alert("Not enough town money for this investment.");
-        return;
-    }
-
-    gameData.money -= amount;
-    gameData.investmentTotal += amount;
-    
-    amountInput.value = 10;
-    renderGame();
-    saveGame();
-    alert(`Successfully invested 💰${amount}. Passive income rate increased.`);
-    closeInvestmentModal(); // Added closing call
-}
-
-function depositSavings() {
-    const amountInput = document.getElementById('savings-deposit-amount');
-    const amount = parseInt(amountInput.value);
-
-    if (isNaN(amount) || amount < 10) {
-        alert("Deposit must be at least 10.");
-        return;
-    }
-    if (gameData.money < amount) {
-        alert("Not enough money to deposit.");
-        return;
-    }
-
-    gameData.money -= amount;
-    gameData.savingsTotal += amount;
-    
-    amountInput.value = 10;
-    renderGame();
-    saveGame();
-    alert(`Deposited 💰${amount}. Current Savings: 💰${gameData.savingsTotal}.`);
-    closeBankModal(); // Added closing call
-}
-
-function withdrawSavings() {
-    const amountInput = document.getElementById('savings-withdraw-amount');
-    const amount = parseInt(amountInput.value);
-
-    if (isNaN(amount) || amount < 10) {
-        alert("Withdrawal must be at least 10.");
-        return;
-    }
-    if (gameData.savingsTotal < amount) {
-        alert("Not enough money in savings.");
-        return;
-    }
-
-    gameData.savingsTotal -= amount;
-    gameData.money += amount;
-    
-    amountInput.value = 10;
-    renderGame();
-    saveGame();
-    alert(`Withdrew 💰${amount}. Current Savings: 💰${gameData.savingsTotal}.`);
-    closeBankModal(); // Added closing call
-}
-
-// --- Relationship Functions ---
-
-function openRelationshipModal() {
-    const mii = miiList[currentMiiIndex];
-    if (!mii) return;
-
-    document.getElementById('rel-mii-name').textContent = mii.name + "'s Relationships";
-    document.getElementById('rel-status').textContent = mii.relationship.partnerId ? 'In a relationship' : 'Single';
-    
-    const relActions = document.getElementById('rel-actions');
-    const friendsList = document.getElementById('rel-friends-ul');
-    relActions.innerHTML = '';
-    friendsList.innerHTML = '';
-
-    // Add friend buttons (for Miis who are not the current Mii and not the partner)
-    miiList.filter(otherMii => otherMii.id !== mii.id && otherMii.id !== mii.relationship.partnerId && !otherMii.isDead).forEach(friend => {
-        const score = mii.relationship.friends[friend.id] || 0;
-        const button = document.createElement('button');
-        button.textContent = `Befriend ${friend.name} (${score}%)`;
-        button.onclick = () => attemptFriendship(mii.id, friend.id);
-        relActions.appendChild(button);
-    });
-
-    // Add partner actions
-    if (mii.relationship.partnerId) {
-        const partner = miiList.find(m => m.id === mii.relationship.partnerId);
-        if (partner) {
-            const partnerName = partner.name;
-            const score = mii.relationship.loveScore;
-
-            document.getElementById('rel-status').innerHTML = `Partnered with ${partnerName} (Love Score: ${score}%)`;
-            
-            const breakUpBtn = document.createElement('button');
-            breakUpBtn.textContent = `Break Up with ${partnerName}`;
-            breakUpBtn.style.backgroundColor = 'red';
-            breakUpBtn.onclick = () => breakUp(mii.id, partner.id);
-            relActions.appendChild(breakUpBtn);
-        }
-    } else {
-        // Attempt to find partner
-        const findPartnerBtn = document.createElement('button');
-        findPartnerBtn.textContent = 'Look for a Partner';
-        findPartnerBtn.style.backgroundColor = '#ff69b4';
-        findPartnerBtn.onclick = () => findPartner(mii.id);
-        relActions.appendChild(findPartnerBtn);
-    }
-    
-    relationshipModal.classList.remove('hidden');
-}
-
-function findPartner(miiId) {
-    const mii = miiList.find(m => m.id === miiId);
-    if (!mii || mii.relationship.partnerId) return;
-
-    // Filter potential partners (different gender, not dead, single, not child)
-    const potentialPartners = miiList.filter(
-        otherMii => otherMii.id !== miiId && 
-                    otherMii.gender !== mii.gender && 
-                    otherMii.relationship.partnerId === null && 
-                    !otherMii.isDead && 
-                    !otherMii.isChild
-    );
-
-    if (potentialPartners.length === 0) {
-        miiMessage.textContent = `${mii.name} couldn't find any potential partners right now.`;
-        closeRelationshipModal();
-        return;
-    }
-
-    const partner = potentialPartners[Math.floor(Math.random() * potentialPartners.length)];
-    
-    mii.relationship.partnerId = partner.id;
-    partner.relationship.partnerId = mii.id;
-    mii.relationship.loveScore = 10;
-    partner.relationship.loveScore = 10;
-    
-    mii.happiness = Math.min(100, mii.happiness + 20);
-    partner.happiness = Math.min(100, partner.happiness + 20);
-
-    miiMessage.textContent = `💖 ${mii.name} is now dating ${partner.name}!`;
-    renderGame();
-    closeRelationshipModal();
-}
-
-function breakUp(miiId, partnerId) {
-    const mii = miiList.find(m => m.id === miiId);
-    const partner = miiList.find(m => m.id === partnerId);
-
-    if (mii) {
-        mii.relationship.partnerId = null;
-        mii.relationship.loveScore = 0;
-        mii.happiness = Math.max(0, mii.happiness - 30); // Big sadness hit
-    }
-    if (partner) {
-        partner.relationship.partnerId = null;
-        partner.relationship.loveScore = 0;
-        partner.happiness = Math.max(0, partner.happiness - 30);
-    }
-    
-    miiMessage.textContent = `💔 ${mii.name} and ${partner.name} have broken up. That's a huge bummer.`;
-    renderGame();
-    closeRelationshipModal();
-}
-
-function attemptFriendship(miiId, friendId) {
-    const mii = miiList.find(m => m.id === miiId);
-    const friend = miiList.find(m => m.id === friendId);
-
-    if (!mii || !friend) return;
-
-    // Check if Mii is friendly
-    const successChance = (mii.personality === 'friendly') ? 0.7 : 0.4;
-    
-    if (Math.random() < successChance) {
-        const boost = 10 + Math.floor(Math.random() * 20);
-        mii.relationship.friends[friendId] = Math.min(100, (mii.relationship.friends[friendId] || 0) + boost);
-        friend.relationship.friends[miiId] = Math.min(100, (friend.relationship.friends[miiId] || 0) + boost);
-        miiMessage.textContent = `🤝 ${mii.name} is now better friends with ${friend.name}!`;
-    } else {
-        miiMessage.textContent = `😞 ${mii.name}'s attempt to bond with ${friend.name} failed.`;
-    }
-
-    renderGame();
-    closeRelationshipModal();
-}
-
-function openGiftModal(targetId, targetName) {
-    document.getElementById('gift-target-name').textContent = targetName;
-    const giftList = document.getElementById('gift-inventory-list');
-    giftList.innerHTML = '';
-
-    let isEmpty = true;
-    for (const key in gameData.inventory) {
-        const count = gameData.inventory[key];
-        const item = ITEMS[key];
-        if (count > 0 && item.type !== 'skill') { // Don't allow gifting skill items
-            isEmpty = false;
-            const listItem = document.createElement('div');
-            listItem.className = 'item-slot';
-            listItem.innerHTML = `
-                ${item.name} x${count} <br>
-                <button onclick="giftItem('${key}', '${targetId}')">Give</button>
-            `;
-            giftList.appendChild(listItem);
-        }
-    }
-
-    if (isEmpty) {
-        giftList.innerHTML = '<p>Town inventory is empty of giftable items.</p>';
-    }
-
-    giftModal.classList.remove('hidden');
-}
-
-function giftItem(key, targetId) {
-    const giver = miiList[currentMiiIndex];
-    const receiver = miiList.find(m => m.id === targetId);
-
-    if (!giver || !receiver || giver.isDead || receiver.isDead) return;
-    if (gameData.inventory[key] < 1) return;
-
-    gameData.inventory[key]--;
-    const item = ITEMS[key];
-
-    // Gift Score logic
-    let scoreBoost = Math.floor(item.cost / 5); // Cost determines base boost
-    
-    if (receiver.relationship.partnerId === giver.id) {
-        // Partner relationship
-        receiver.relationship.loveScore = Math.min(100, receiver.relationship.loveScore + scoreBoost);
-        giver.relationship.loveScore = receiver.relationship.loveScore; // Sync scores
-        miiMessage.textContent = `💕 ${giver.name} gifted ${item.name} to partner ${receiver.name}! Love score increased!`;
-    } else if (receiver.relationship.friends[giver.id] !== undefined) {
-        // Friend relationship
-        receiver.relationship.friends[giver.id] = Math.min(100, receiver.relationship.friends[giver.id] + scoreBoost);
-        giver.relationship.friends[receiver.id] = receiver.relationship.friends[giver.id]; // Sync scores
-        miiMessage.textContent = `🎁 ${giver.name} gifted ${item.name} to friend ${receiver.name}. Friendship deepened!`;
-    } else {
-        // New/Acquaintance relationship
-        // Automatically start friendship with a small score
-        receiver.relationship.friends[giver.id] = scoreBoost;
-        giver.relationship.friends[receiver.id] = scoreBoost;
-        miiMessage.textContent = `💖 ${giver.name} gifted ${item.name} to ${receiver.name}. They are now acquaintances!`;
-    }
-
-    // Happiness boost for receiver
-    receiver.happiness = Math.min(100, receiver.happiness + (item.happiness || 5));
-    
-    renderGame();
-    giftModal.classList.add('hidden');
-    saveGame();
-}
-
-
-// --- Rendering ---
-
-function renderGame() {
-    moneyStat.textContent = gameData.money.toLocaleString();
-    renderCaretakerStatus();
-    renderResidentList();
-    renderCurrentMiiState();
-    renderInventory();
-    renderGoals();
-    
-    currentSeasonDisplay.textContent = gameData.currentSeason.toUpperCase();
-    seasonTicksRemainingDisplay.textContent = 50 - (gameData.gameTickCount % 50);
-
-    if (gameData.activeEvent) {
-        document.getElementById('active-event-status').textContent = `${gameData.activeEvent.name} (${gameData.activeEvent.duration} ticks left)`;
-        gameData.activeEvent.duration--;
-        if (gameData.activeEvent.duration <= 0) {
-            gameData.activeEvent = null;
-            document.getElementById('active-event-status').textContent = 'None';
-        }
-    } else {
-        document.getElementById('active-event-status').textContent = 'None';
-    }
-}
-
-function renderCaretakerStatus() {
-    caretakerStatus.textContent = gameData.isCaretakerActive ? 'ACTIVE (Automatic food/mood relief)' : 'INACTIVE';
-    caretakerStatus.style.color = gameData.isCaretakerActive ? 'green' : 'red';
-}
-
-function renderResidentList() {
-    residentList.innerHTML = '';
-    miiList.forEach((mii, index) => {
-        const card = document.createElement('div');
-        card.className = 'resident-mini-card';
-        if (index === currentMiiIndex) card.classList.add('selected');
-        if (mii.happiness < 30) card.classList.add('sad');
-        if (mii.hunger < 30) card.classList.add('hungry');
-        if (mii.isSleeping) card.classList.add('asleep');
-        if (mii.isIll) card.classList.add('ill');
-        if (mii.isChild) card.classList.add('child');
-        
-        card.onclick = () => switchMii(index);
-
-        let statusText = `${mii.isDead ? '💀 Deceased' : mii.job}`;
-        let statusIcon = '';
-        if (mii.isIll) statusIcon = '🤒';
-        else if (mii.isSleeping) statusIcon = '💤';
-        else if (mii.hunger < 20) statusIcon = '😩';
-        else if (mii.happiness < 30) statusIcon = '😔';
-
-
-        card.innerHTML = `
-            <h5>${mii.name} ${mii.avatar}</h5>
-            <p><span class="status-icon">${statusIcon}</span> ${statusText}</p>
-        `;
-        residentList.appendChild(card);
-    });
-}
-
-function renderCurrentMiiState() {
-    miiSelect.innerHTML = '';
-    miiList.filter(m => !m.isDead).forEach((mii, index) => {
-        const option = document.createElement('option');
-        option.value = index;
-        option.textContent = mii.name;
-        if (index === currentMiiIndex) {
-            option.selected = true;
-        }
-        miiSelect.appendChild(option);
-    });
-
-    const mii = miiList[currentMiiIndex];
-    if (!mii) {
-        miiName.textContent = 'No Resident Selected';
-        document.querySelector('.mii-avatar').textContent = '🤷';
-        // Clear all stats
-        miiName.textContent = '---';
-        document.getElementById('gender-stat').textContent = '---';
-        document.getElementById('personality-stat').textContent = '---';
-        document.getElementById('relationship-stat').textContent = '---';
-        miiRequestBox.classList.add('hidden');
-        document.querySelector('.actions').innerHTML = '';
-        
-        happinessStat.textContent = '0';
-        hungerStat.textContent = '0';
-        energyStat.textContent = '0';
-        happinessBar.style.width = '0%';
-        hungerBar.style.width = '0%';
-        energyBar.style.width = '0%';
-        return;
-    }
-
-    miiName.textContent = mii.name;
-    document.querySelector('.mii-avatar').textContent = mii.avatar;
-    document.getElementById('gender-stat').textContent = `${mii.gender} / Age ${mii.age}`;
-    document.getElementById('personality-stat').textContent = `${mii.personality} / ${mii.job} (${mii.skillStatName}: ${mii.skillStatValue})`;
-    
-    let relStatus = 'Single';
-    if (mii.relationship.partnerId) {
-        const partner = miiList.find(m => m.id === mii.relationship.partnerId);
-        if (partner) {
-            relStatus = `Partnered with ${partner.name} (${mii.relationship.loveScore}%)`;
-        }
-    }
-    document.getElementById('relationship-stat').textContent = relStatus;
-
-    // Stats
-    happinessStat.textContent = mii.happiness.toFixed(0);
-    hungerStat.textContent = mii.hunger.toFixed(0);
-    energyStat.textContent = mii.energy.toFixed(0);
-
-    happinessBar.style.width = mii.happiness + '%';
-    hungerBar.style.width = mii.hunger + '%';
-    energyBar.style.width = mii.energy + '%';
-    
-    happinessBar.classList.toggle('low', mii.happiness < 30);
-    hungerBar.classList.toggle('low', mii.hunger < 30);
-    energyBar.classList.toggle('low', mii.energy < 30);
-
-    // Actions
-    const actionsDiv = document.querySelector('.actions');
-    actionsDiv.innerHTML = '';
-
-    if (!mii.isDead) {
-        actionsDiv.innerHTML = `
-            <button id="work-button" onclick="work()" style="background-color: #007bff;" ${mii.isSleeping ? 'disabled' : ''}>Work 💼</button>
-            <button id="sleep-button" onclick="sleep()" style="background-color: ${mii.isSleeping ? '#dc3545' : '#ff69b4'};">${mii.isSleeping ? 'Wake Up' : 'Sleep 🛌'}</button>
-            <button id="rel-button" onclick="openRelationshipModal()" style="background-color: #f06292;">Relationships 🧑‍🤝‍🧑</button>
-            <button id="job-button" onclick="openJobAssignmentModal()" style="background-color: #1abc9c;">Change Job 🛠️</button>
-            <button id="gift-button" onclick="openGiftModal(miiList[currentMiiIndex].id, mii.name)" style="background-color: #9b59b6;">Receive Gift 🎁</button>
-        `;
-    } else {
-        actionsDiv.textContent = `${mii.name} is deceased.`;
-    }
-
-    // Requests
-    if (mii.currentRequest) {
-        miiRequestBox.classList.remove('hidden');
-        requestedItemName.textContent = ITEMS[mii.currentRequest].name;
-    } else {
-        miiRequestBox.classList.add('hidden');
-    }
-}
-
-function renderInventory() {
-    inventoryList.innerHTML = ''; 
-    let isEmpty = true;
-
-    for (const key in gameData.inventory) {
-        const count = gameData.inventory[key];
-        if (count > 0) {
-            isEmpty = false;
-            const item = ITEMS[key];
-            const listItem = document.createElement('div');
-            listItem.className = 'item-slot';
-            listItem.innerHTML = `
-                <p><strong>${item.name}</strong> x${count}</p>
-                <p><small>${item.description}</small></p>
-                <!-- This button calls the fixed useItem(key) function -->
-                <button onclick="useItem('${key}')">Use</button>
-            `; 
-            inventoryList.appendChild(listItem);
-        }
-    }
-    
-    if (isEmpty) {
-        inventoryList.innerHTML = '<p>Town inventory is currently empty.</p>';
-    }
-    
-    // Update store modal inventory display
-    if (document.getElementById('gift-inventory-list')) {
-        // Rerender gift inventory if modal is open (or just make sure it's closed)
-        if (!giftModal.classList.contains('hidden')) {
-             // Only force render if open, otherwise let openGiftModal handle it
-        }
-    }
-}
-
-function renderStoreItems() {
-    const storeItems = document.getElementById('store-items');
-    storeItems.innerHTML = '';
-    document.getElementById('store-money').textContent = gameData.money.toLocaleString();
-
-    for (const key in ITEMS) {
-        const item = ITEMS[key];
-        const itemDiv = document.createElement('div');
-        itemDiv.className = 'item-slot';
-        itemDiv.style.width = '150px';
-        itemDiv.innerHTML = `
-            <h4>${item.name}</h4>
-            <p>Cost: 💰${item.cost}</p>
-            <p><small>${item.description}</small></p>
-            <button onclick="buyItem('${key}')" style="background-color: #28a745;">Buy</button>
-        `;
-        storeItems.appendChild(itemDiv);
-    }
-}
-
-function renderTownHall() {
-    const townHallContent = document.getElementById('town-hall-content');
-    townHallContent.innerHTML = '';
-
-    // Caretaker Status/Purchase
-    const caretakerDiv = document.createElement('div');
-    if (gameData.isCaretakerActive) {
-        caretakerDiv.innerHTML = `<p style="color: green; font-weight: bold;">Caretaker Service is ACTIVE!</p>`;
-    } else {
-        caretakerDiv.innerHTML = `
-            <p>Caretaker Service (Costs 💰${CARETAKER_PURCHASE_PRICE}): Automatically uses ${ITEMS[CARETAKER_FOOD].name} and ${ITEMS[CARETAKER_MOOD].name} to prevent Mii stats from dropping too low (<${CARETAKER_THRESHOLD}%).</p>
-            <button onclick="buyCaretakerService()" style="background-color: #007bff;">Purchase Service</button>
-        `;
-    }
-    townHallContent.appendChild(caretakerDiv);
-    townHallContent.appendChild(document.createElement('hr'));
-
-    // Research Options
-    const researchHeader = document.createElement('h3');
-    researchHeader.textContent = 'Town Research & Upgrades';
-    townHallContent.appendChild(researchHeader);
-
-    for (const key in RESEARCH_OPTIONS) {
-        const research = RESEARCH_OPTIONS[key];
-        const researchDiv = document.createElement('div');
-        researchDiv.style.border = '1px solid #ddd';
-        researchDiv.style.padding = '10px';
-        researchDiv.style.margin = '10px 0';
-        researchDiv.style.borderRadius = '5px';
-
-        if (gameData.researchCompleted.includes(key)) {
-            researchDiv.innerHTML = `
-                <p style="color: green; font-weight: bold;">✅ ${research.name} (Complete)</p>
-                <p><small>${research.description}</small></p>
-            `;
-        } else {
-            researchDiv.innerHTML = `
-                <h4>${research.name}</h4>
-                <p>Cost: 💰${research.cost}</p>
-                <p><small>${research.description}</small></p>
-                <button onclick="completeResearch('${key}')" style="background-color: #ff8c00;">Start Research</button>
-            `;
-        }
-        townHallContent.appendChild(researchDiv);
-    }
-}
-
-function renderGoals() {
-    goalsList.innerHTML = '';
-    gameData.currentGoals.forEach(goal => {
-        const li = document.createElement('li');
-        li.className = 'goal-item';
-        if (goal.completed) li.classList.add('completed');
-        
-        li.textContent = `${goal.description} - ${goal.completed ? 'COMPLETED' : 'In Progress'}`;
-        
-        goalsList.appendChild(li);
-    });
-}
-
-function renderJobAssignment() {
-    const mii = miiList[currentMiiIndex];
-    if (!mii) return;
-
-    document.getElementById('job-mii-name').textContent = mii.name;
-    document.getElementById('max-skill-display').textContent = `100`; // Max skill is 100
-
-    const jobListOptions = document.getElementById('job-list-options');
-    jobListOptions.innerHTML = '';
-
-    for (const key in JOB_STATS) {
-        const job = JOB_STATS[key];
-        const jobDiv = document.createElement('div');
-        jobDiv.style.border = mii.job === key ? '2px solid #007bff' : '1px solid #ccc';
-        jobDiv.style.padding = '10px';
-        jobDiv.style.margin = '10px 0';
-        jobDiv.style.borderRadius = '5px';
-
-        let skillDetail = '';
-        if (key !== 'none') {
-             const statName = job.skillStat;
-             skillDetail = ` (Uses ${statName.toUpperCase()}: ${mii[statName]} / Max Income Skill: ${job.skillCap})`;
-        }
-        
-        jobDiv.innerHTML = `
-            <h4>${key.toUpperCase()}</h4>
-            <p>Income per Tick: 💰${job.income} ${skillDetail}</p>
-            ${mii.job === key ? '<p style="color: green; font-weight: bold;">Current Job</p>' : `<button onclick="assignJob('${key}')" style="background-color: #1abc9c;">Assign Job</button>`}
-        `;
-        jobListOptions.appendChild(jobDiv);
-    }
-}
-
-// --- Town Hall Logic ---
-function buyCaretakerService() {
-    if (gameData.money < CARETAKER_PURCHASE_PRICE) {
-        alert("Not enough money to purchase the Caretaker Service.");
-        return;
-    }
-    gameData.money -= CARETAKER_PURCHASE_PRICE;
-    gameData.isCaretakerActive = true;
-    miiMessage.textContent = "Caretaker Service purchased! Miis will now be automatically maintained.";
-    renderGame();
-    renderTownHall();
-    saveGame();
-}
-
-function completeResearch(key) {
-    const research = RESEARCH_OPTIONS[key];
-    if (gameData.money < research.cost) {
-        alert(`You need 💰${research.cost} to complete this research.`);
-        return;
-    }
-
-    gameData.money -= research.cost;
-    gameData.researchCompleted.push(key);
-    
-    if (research.effect) {
-        research.effect();
-    }
-    
-    miiMessage.textContent = `Research completed: ${research.name}!`;
-    renderGame();
-    renderTownHall();
-    saveGame();
-}
-
-function assignJob(jobKey) {
-    const mii = miiList[currentMiiIndex];
-    if (!mii) return;
-
-    mii.job = jobKey;
-    const jobData = JOB_STATS[jobKey];
-    
-    if (jobKey !== 'none') {
-        const skillName = jobData.skillStat;
-        mii.skill = mii[skillName];
-        miiMessage.textContent = `${mii.name} is now a ${jobKey}! Their income is based on their ${mii.skillStatName} skill.`;
-    } else {
-        mii.skill = 0;
-        miiMessage.textContent = `${mii.name} is now unemployed.`;
-    }
-    
-    renderGame();
-    closeJobAssignmentModal();
-    saveGame();
-}
-
-// --- Event Handlers ---
-
-function switchMii(index) {
-    if (index === undefined) {
-        currentMiiIndex = parseInt(miiSelect.value);
-    } else {
-        currentMiiIndex = index;
-    }
-    renderGame();
-}
-
-// --- Modal Openers ---
-// FIX: These functions were missing or defined in a way that caused issues. 
-// Ensuring they properly remove the 'hidden' class fixes the top buttons.
-
-function openNewMiiCreation() {
-    elements.newMiiNameInput.value = '';
-    newMiiModal.classList.remove('hidden');
-}
-
-function openStore() {
-    renderStoreItems();
-    storeModal.classList.remove('hidden');
-}
-
-function openTownHall() {
-    renderTownHall();
-    townHallModal.classList.remove('hidden');
-}
-
-function openBankModal() {
-    document.getElementById('bank-current-money').textContent = gameData.money.toLocaleString();
-    document.getElementById('savings-total').textContent = gameData.savingsTotal.toLocaleString();
-    bankModal.classList.remove('hidden');
-}
-
-function openInvestmentModal() {
-    document.getElementById('investment-total').textContent = gameData.investmentTotal.toLocaleString();
-    document.getElementById('investment-rate').textContent = Math.floor(gameData.investmentTotal * 0.05).toLocaleString();
-    investmentModal.classList.remove('hidden');
-}
-
-function openJobAssignmentModal() {
-    if (currentMiiIndex === -1) {
-        miiMessage.textContent = "Please select a resident first.";
-        return;
-    }
-    renderJobAssignment();
-    jobAssignmentModal.classList.remove('hidden');
-}
-
-
-// --- Modal Closers (CRITICAL FIX: These were missing or not correctly defined) ---
-
-function closeNewMiiModal() {
-    newMiiModal.classList.add('hidden');
-}
-
-function closeStore() {
-    storeModal.classList.add('hidden');
-}
-
-function closeTownHall() {
-    townHallModal.classList.add('hidden');
-}
-
-function closeInvestmentModal() {
-    investmentModal.classList.add('hidden');
-}
-
-function closeBankModal() {
-    bankModal.classList.add('hidden');
-}
-
-function closeRelationshipModal() {
-    relationshipModal.classList.add('hidden');
-}
-
-function closeJobAssignmentModal() {
-    jobAssignmentModal.classList.add('hidden');
-}
-
-
-// --- Saving and Loading ---
-
+const JOBS = {
+    none: { name: 'Unemployed', basePay: 0, requiredSkill: 0 },
+    janitor: { name: 'Janitor', basePay: 20, requiredSkill: 0 },
+    clerk: { name: 'Store Clerk', basePay: 30, requiredSkill: 15 },
+    scientist: { name: 'Scientist', basePay: 50, requiredSkill: 40 },
+    artist: { name: 'Artist', basePay: 40, requiredSkill: 25 },
+    politician: { name: 'Politician', basePay: 60, requiredSkill: 60 }
+};
+
+const TOWN_HALL_RESEARCH = {
+    // Key: [Description, Cost, Prerequisite Research (or null)]
+    'advanced_banking': ['Advanced Banking (Higher Interest)', 500, null],
+    'efficient_work': ['Efficient Work (Less Energy Decay)', 750, 'advanced_banking'],
+    'social_science': ['Social Science (Better Relationship Gains)', 1000, 'efficient_work'],
+    'population_control': ['Population Control (Limit Mii Count)', 2000, 'social_science']
+};
+
+const PERSONALITIES = [
+    'Energetic', 'Laid-back', 'Serious', 'Creative', 'Social', 'Shy'
+];
+
+// --- Utility Functions ---
+
+/**
+ * Saves the current game state to localStorage.
+ */
 function saveGame() {
-    try {
-        const dataToSave = JSON.stringify({
-            gameData: gameData,
-            miiList: miiList
-        });
-        localStorage.setItem(SAVE_KEY, dataToSave);
-        saveMessage.textContent = `Game Saved at ${new Date().toLocaleTimeString()}.`;
-    } catch (e) {
-        saveMessage.textContent = "Error saving game data.";
-        console.error("Error saving game:", e);
-    }
+    const dataToSave = {
+        money: gameData.money,
+        inventory: gameData.inventory,
+        isCaretakerActive: gameData.isCaretakerActive,
+        investmentTotal: gameData.investmentTotal,
+        savingsTotal: gameData.savingsTotal,
+        mode: gameData.mode,
+        difficulty: gameData.difficulty,
+        townHallOwned: gameData.townHallOwned,
+        researchCompleted: gameData.researchCompleted,
+        gameTickCount: gameData.gameTickCount,
+        currentSeason: gameData.currentSeason,
+        activeEvent: gameData.activeEvent,
+        currentGoals: gameData.currentGoals,
+        miiList: miiList
+    };
+    localStorage.setItem(SAVE_KEY, JSON.stringify(dataToSave));
+    saveMessage.textContent = "Game Saved!";
 }
 
+/**
+ * Loads the game state from localStorage or starts a new game.
+ */
 function loadGame() {
     const savedData = localStorage.getItem(SAVE_KEY);
     if (!savedData) {
@@ -1388,37 +173,48 @@ function loadGame() {
 
     try {
         const data = JSON.parse(savedData);
-        gameData = data.gameData;
-        miiList = data.miiList.map(miiData => {
-            // Instantiate Mii class for methods and proper structure
-            const mii = Object.assign(new Mii(), miiData);
-            
-            // Ensure all properties exist from the current Mii class definition
+        
+        // Load main game data
+        gameData.money = data.money || 0;
+        gameData.inventory = data.inventory || {};
+        gameData.isCaretakerActive = data.isCaretakerActive || false;
+        gameData.investmentTotal = data.investmentTotal || 0;
+        gameData.savingsTotal = data.savingsTotal || 0;
+        gameData.mode = data.mode || 'manual';
+        gameData.difficulty = data.difficulty || 'normal';
+        gameData.townHallOwned = data.townHallOwned || false;
+        gameData.researchCompleted = data.researchCompleted || [];
+        gameData.gameTickCount = data.gameTickCount || 0;
+        gameData.currentSeason = data.currentSeason || 'spring';
+        gameData.activeEvent = data.activeEvent || null;
+        gameData.currentGoals = data.currentGoals || [];
+
+        // Load Miis
+        miiList = data.miiList || [];
+
+        // Ensure backward compatibility for Mii objects
+        miiList.forEach(mii => {
+            mii.happiness = mii.happiness || 50;
+            mii.energy = mii.energy || 50;
             mii.isChild = mii.isChild || false;
             mii.skill = mii.skill || 0;
             mii.job = mii.job || 'none';
             mii.isIll = mii.isIll || false;
             
-            // Ensure loveScore exists on old saves
-            if (mii.relationship && mii.relationship.loveScore === undefined) {
+            // Ensure relationship structure exists and has loveScore
+            if (!mii.relationship) {
+                mii.relationship = { partnerId: null, loveScore: 0 };
+            } else if (mii.relationship.loveScore === undefined) {
                  mii.relationship.loveScore = 0;
             }
-            return mii;
         });
 
-        // Initialize game loop and rendering
-        gameScreen.classList.remove('hidden');
-        creationScreen.classList.add('hidden');
-        
-        // Ensure currentMiiIndex is valid after loading, default to first Mii
-        if (miiList.length > 0) {
-            currentMiiIndex = 0;
-        }
-
-        renderGame();
-        startTownLoop();
         saveMessage.textContent = `Town data loaded. Mode: ${gameData.mode.toUpperCase()}, Difficulty: ${gameData.difficulty.toUpperCase()}.`;
         
+        // Setup the game loop after successful load
+        startGameLoop();
+        updateUI();
+
     } catch (e) {
         saveMessage.textContent = "Error loading game data. Starting new town.";
         console.error("Could not parse saved data", e);
@@ -1426,10 +222,11 @@ function loadGame() {
     }
 }
 
+/**
+ * Resets the entire game by clearing localStorage and reloading the page.
+ */
 function resetGame() {
-    // Replaced alert with custom modal logic
-    const confirmation = window.confirm("Are you sure you want to delete your entire town and reset the game?");
-    if (confirmation) {
+    if (confirm("Are you sure you want to delete your entire town and reset the game?")) {
         localStorage.removeItem(SAVE_KEY);
         if (gameLoop) {
             clearInterval(gameLoop);
@@ -1439,18 +236,1127 @@ function resetGame() {
     }
 }
 
+/**
+ * @function initGame
+ * @description Initializes the game by attempting to load saved data.
+ * This function should be called once the DOM is fully loaded.
+ */
+function initGame() {
+    console.log("Game: Initializing startup sequence.");
+    // Attach all event listeners for buttons first
+    setupEventListeners(); 
+    loadGame(); // This will either load the saved town or show the creation screen.
+}
 
-// --- Modal Closing Listeners (Handle ESC key and click outside) ---
-window.addEventListener('click', function(event) {
-    if (event.target.classList.contains('modal')) {
-        event.target.classList.add('hidden');
+/**
+ * Starts the main game loop interval.
+ */
+function startGameLoop() {
+    if (!gameLoop) {
+        gameLoop = setInterval(gameTick, UPDATE_INTERVAL);
+        console.log("Game loop started.");
     }
-});
-document.addEventListener('keydown', function(event) {
-    if (event.key === 'Escape') {
-        const modals = [storeModal, newMiiModal, investmentModal, relationshipModal, bankModal, townHallModal, jobAssignmentModal, giftModal];
-        modals.forEach(modal => modal.classList.add('hidden'));
-    }
-});
+}
 
-initGame();
+/**
+ * Stops the main game loop interval.
+ */
+function stopGameLoop() {
+    if (gameLoop) {
+        clearInterval(gameLoop);
+        gameLoop = null;
+        console.log("Game loop stopped.");
+    }
+}
+
+/**
+ * Calculates Mii job pay based on skill.
+ * @param {object} mii The Mii object.
+ * @returns {number} The calculated pay.
+ */
+function calculatePay(mii) {
+    const job = JOBS[mii.job];
+    if (job.basePay === 0) return 0;
+    
+    // Pay is basePay + (skill / MAX_SKILL) * JOB_PAY_MULTIPLIER * basePay
+    const skillBonus = (mii.skill / MAX_SKILL) * JOB_PAY_MULTIPLIER * job.basePay;
+    return Math.floor(job.basePay + skillBonus);
+}
+
+// --- UI Rendering Functions ---
+
+/**
+ * Switches the view to the Mii creation screen.
+ */
+function showCreationScreen() {
+    mainScreen.classList.add('hidden');
+    creationScreen.classList.remove('hidden');
+}
+
+/**
+ * Switches the view to the main game screen and starts the loop.
+ */
+function showMainScreen() {
+    creationScreen.classList.add('hidden');
+    mainScreen.classList.remove('hidden');
+    startGameLoop();
+    updateUI();
+}
+
+/**
+ * Renders the list of Miis on the main screen.
+ */
+function renderMiiList() {
+    miiListElement.innerHTML = '';
+    miiList.forEach((mii, index) => {
+        const miiCard = document.createElement('div');
+        miiCard.className = `mii-card bg-white p-4 rounded-xl shadow-md cursor-pointer hover:bg-gray-100 transition duration-150 ${mii.isIll ? 'border-4 border-red-500' : ''}`;
+        miiCard.dataset.index = index;
+
+        const happinessBarWidth = Math.max(0, mii.happiness);
+        const energyBarWidth = Math.max(0, mii.energy);
+
+        let statusIcons = '';
+        if (mii.isIll) {
+            statusIcons += '<span class="text-red-500 text-lg ml-2" title="Ill">🤒</span>';
+        }
+        if (mii.relationship.partnerId) {
+            statusIcons += '<span class="text-pink-500 text-lg ml-2" title="In Relationship">💖</span>';
+        }
+
+        miiCard.innerHTML = `
+            <h3 class="font-bold text-lg text-gray-800">${mii.name} ${statusIcons}</h3>
+            <p class="text-sm text-gray-600">Job: ${JOBS[mii.job].name}</p>
+            <p class="text-xs text-gray-500 mb-2">Personality: ${mii.personality}</p>
+            
+            <div class="mb-1">
+                <span class="text-xs font-medium">❤️ Happiness: ${Math.floor(mii.happiness)}%</span>
+                <div class="w-full bg-gray-200 rounded-full h-2.5">
+                    <div class="bg-green-500 h-2.5 rounded-full" style="width: ${happinessBarWidth}%"></div>
+                </div>
+            </div>
+            
+            <div class="mb-2">
+                <span class="text-xs font-medium">⚡ Energy: ${Math.floor(mii.energy)}%</span>
+                <div class="w-full bg-gray-200 rounded-full h-2.5">
+                    <div class="bg-yellow-500 h-2.5 rounded-full" style="width: ${energyBarWidth}%"></div>
+                </div>
+            </div>
+
+            <p class="text-xs text-blue-700">Level: ${Math.floor(mii.skill)}</p>
+            <div class="flex space-x-2 mt-2">
+                <button class="action-btn text-xs bg-blue-500 hover:bg-blue-600 text-white p-1 rounded-lg" onclick="showJobAssignmentModal(${index})">Work</button>
+                <button class="action-btn text-xs bg-green-500 hover:bg-green-600 text-white p-1 rounded-lg" onclick="showGiftModal(${index})">Gift</button>
+                <button class="action-btn text-xs bg-pink-500 hover:bg-pink-600 text-white p-1 rounded-lg" onclick="showRelationshipModal(${index})">Social</button>
+            </div>
+        `;
+        miiCard.onclick = () => selectMii(index);
+        miiListElement.appendChild(miiCard);
+    });
+}
+
+/**
+ * Updates the inventory display.
+ */
+function renderInventory() {
+    inventoryList.innerHTML = `
+        <li class="p-2 border-b font-semibold">Inventory</li>
+    `;
+    for (const itemKey in gameData.inventory) {
+        if (gameData.inventory[itemKey] > 0) {
+            const item = INVENTORY_ITEMS[itemKey];
+            const li = document.createElement('li');
+            li.className = 'p-2 flex justify-between items-center';
+            li.innerHTML = `
+                <span>${item.name}</span>
+                <span class="font-bold">${gameData.inventory[itemKey]}</span>
+            `;
+            inventoryList.appendChild(li);
+        }
+    }
+}
+
+/**
+ * Updates the game clock and season display.
+ */
+function renderClock() {
+    const tickDay = Math.floor(gameData.gameTickCount / 12) + 1;
+    const tickHour = (gameData.gameTickCount % 12) * 2;
+    const hourDisplay = tickHour === 0 ? '12 AM' : (tickHour > 12 ? `${tickHour - 12} PM` : `${tickHour} AM`);
+
+    clockDisplay.textContent = `Day ${tickDay} - ${hourDisplay}`;
+    seasonDisplay.textContent = `Season: ${gameData.currentSeason.charAt(0).toUpperCase() + gameData.currentSeason.slice(1)}`;
+}
+
+/**
+ * Updates the goal list display.
+ */
+function renderGoals() {
+    goalsList.innerHTML = '<li class="p-2 border-b font-semibold">Current Goals</li>';
+    if (gameData.currentGoals.length === 0) {
+        goalsList.innerHTML += '<li class="p-2 text-gray-500 text-sm">No active goals.</li>';
+    } else {
+        gameData.currentGoals.forEach(goal => {
+            const li = document.createElement('li');
+            li.className = 'p-2 text-sm';
+            li.textContent = `✅ ${goal.description}`;
+            goalsList.appendChild(li);
+        });
+    }
+}
+
+/**
+ * Main function to update all UI elements.
+ */
+function updateUI() {
+    moneyDisplay.textContent = gameData.money.toFixed(0);
+    renderMiiList();
+    renderInventory();
+    renderClock();
+    renderGoals();
+    updateInvestmentModalUI();
+    updateBankModalUI();
+    updateStoreModalUI();
+    updateTownHallModalUI();
+    saveGame();
+}
+
+// --- Game Logic Functions ---
+
+/**
+ * The core game loop function. Executed every UPDATE_INTERVAL.
+ */
+function gameTick() {
+    gameData.gameTickCount++;
+    const prevSeason = gameData.currentSeason;
+    
+    // Update season every 48 ticks (4 days)
+    if (gameData.gameTickCount % 48 === 0) {
+        const seasons = ['spring', 'summer', 'fall', 'winter'];
+        const currentSeasonIndex = seasons.indexOf(gameData.currentSeason);
+        gameData.currentSeason = seasons[(currentSeasonIndex + 1) % seasons.length];
+        statusMessage.textContent = `It is now ${gameData.currentSeason}!`;
+
+        // Apply seasonal effects (e.g., higher chance of illness in winter)
+        if (gameData.currentSeason === 'winter') {
+            statusMessage.textContent += " Colder weather increases the chance of illness.";
+        }
+    }
+
+    // Apply interest on savings at the start of a new day (every 12 ticks)
+    if (gameData.gameTickCount % 12 === 0) {
+        const interestRate = gameData.researchCompleted.includes('advanced_banking') ? SAVINGS_INTEREST_RATE * 1.5 : SAVINGS_INTEREST_RATE;
+        const interest = Math.floor(gameData.savingsTotal * interestRate);
+        gameData.savingsTotal += interest;
+        if (interest > 0) {
+            statusMessage.textContent = `Bank interest earned: +${interest} in savings!`;
+        }
+    }
+    
+    // Mii Status Updates & Actions
+    miiList.forEach(mii => {
+        // 1. Decay
+        let happinessDecay = DECAY_RATE;
+        let energyDecay = ENERGY_DECAY_RATE;
+        
+        // Efficient Work research reduces energy decay
+        if (mii.job !== 'none' && gameData.researchCompleted.includes('efficient_work')) {
+            energyDecay *= 0.75;
+        }
+
+        mii.happiness = Math.max(0, mii.happiness - happinessDecay);
+        mii.energy = Math.max(0, mii.energy - energyDecay);
+        
+        // 2. Illness
+        if (!mii.isIll && mii.happiness < 20 && Math.random() < 0.05) {
+            mii.isIll = true;
+            statusMessage.textContent = `${mii.name} has fallen ill! Treat them quickly!`;
+        } else if (mii.isIll) {
+            // Illness continues to decay happiness faster
+            mii.happiness = Math.max(0, mii.happiness - 5);
+        }
+
+        // 3. Automatic Actions (if mode is 'automatic' or caretaker is active)
+        if (gameData.mode === 'automatic' || gameData.isCaretakerActive) {
+            handleAutomaticActions(mii);
+        }
+
+        // 4. Job Pay
+        if (mii.job !== 'none' && mii.energy >= 20 && Math.random() < AUTOMATIC_WORK_CHANCE) {
+            const pay = calculatePay(mii);
+            gameData.money += pay;
+            mii.energy = Math.max(0, mii.energy - 10); // Spend energy to work
+            mii.skill = Math.min(MAX_SKILL, mii.skill + SKILL_GAIN_RATE);
+            statusMessage.textContent = `${mii.name} worked and earned ${pay} coins! Skill increased.`;
+        }
+        
+        // 5. Relationship Decay (if in relationship)
+        if (mii.relationship.partnerId) {
+            const partner = miiList.find(m => m.id === mii.relationship.partnerId);
+            if (partner) {
+                // Decay love score slowly
+                mii.relationship.loveScore = Math.max(0, mii.relationship.loveScore - 1); 
+            }
+        }
+    });
+
+    // Investment Check (Quarterly: every 12 ticks * 4 = 48 ticks)
+    if (gameData.gameTickCount % 48 === 1) {
+        processInvestments();
+    }
+    
+    // Check Goals
+    checkGoals();
+    
+    updateUI();
+}
+
+/**
+ * Handles automatic actions for Miis in automatic mode or with caretaker.
+ * @param {object} mii The Mii object.
+ */
+function handleAutomaticActions(mii) {
+    // 1. Healing an ill Mii (Caretaker only)
+    if (mii.isIll && gameData.isCaretakerActive) {
+        if (gameData.inventory['apple'] >= 1) {
+            gameData.inventory['apple']--;
+            mii.isIll = false;
+            mii.happiness = 50; // Restore base health
+            statusMessage.textContent = `Caretaker healed ${mii.name}. (1 Apple used)`;
+            return;
+        }
+    }
+    
+    // 2. Food/Mood (Caretaker or Automatic Mode)
+    if (gameData.inventory[CARETAKER_FOOD] && mii.energy < CARETAKER_THRESHOLD) {
+        const item = INVENTORY_ITEMS[CARETAKER_FOOD];
+        gameData.inventory[CARETAKER_FOOD]--;
+        mii.energy = Math.min(100, mii.energy + item.energy);
+        statusMessage.textContent = `Caretaker fed ${mii.name}. (1 Apple used)`;
+        return;
+    }
+    
+    if (gameData.inventory[CARETAKER_MOOD] && mii.happiness < CARETAKER_THRESHOLD) {
+        const item = INVENTORY_ITEMS[CARETAKER_MOOD];
+        gameData.inventory[CARETAKER_MOOD]--;
+        mii.happiness = Math.min(100, mii.happiness + item.happiness);
+        statusMessage.textContent = `Caretaker cheered up ${mii.name}. (1 Coffee used)`;
+        return;
+    }
+    
+    // 3. Automatic Dating (Automatic Mode only, for Miis without partner)
+    if (gameData.mode === 'automatic' && !mii.relationship.partnerId && Math.random() < AUTOMATIC_DATING_CHANCE) {
+        // Find a potential partner (different gender, no partner)
+        const potentialPartners = miiList.filter(m => 
+            m.gender !== mii.gender && 
+            !m.relationship.partnerId && 
+            m.id !== mii.id
+        );
+
+        if (potentialPartners.length > 0) {
+            const partner = potentialPartners[Math.floor(Math.random() * potentialPartners.length)];
+            const success = Math.random() > 0.3; // 70% chance of success
+            if (success) {
+                establishRelationship(mii, partner, 15);
+                statusMessage.textContent = `Automatic mode: ${mii.name} and ${partner.name} started dating!`;
+            } else {
+                statusMessage.textContent = `Automatic mode: ${mii.name}'s attempt to date failed.`;
+            }
+        }
+    }
+}
+
+/**
+ * Creates a new Mii and adds it to the list.
+ * @param {string} name - The Mii's name.
+ * @param {string} personality - The Mii's personality.
+ * @param {string} gender - The Mii's gender.
+ */
+function createMii(name, personality, gender) {
+    const newMii = {
+        id: crypto.randomUUID(), // Unique identifier
+        name: name,
+        personality: personality,
+        gender: gender,
+        happiness: 50,
+        energy: 50,
+        skill: 0,
+        job: 'none',
+        isChild: false, // All starting Miis are adults
+        isIll: false,
+        relationship: {
+            partnerId: null, // ID of partner Mii
+            loveScore: 0
+        },
+        requests: [] // Future expansion: Mii requests
+    };
+    miiList.push(newMii);
+    saveGame();
+    updateUI();
+    
+    if (miiList.length === 1) {
+        showMainScreen(); // Transition to main screen after first Mii is created
+    }
+}
+
+// --- Investment Logic ---
+
+/**
+ * Handles the investment submission from the modal.
+ */
+function investMoney() {
+    const amount = parseInt(investmentAmountInput.value, 10);
+    if (isNaN(amount) || amount <= 0) {
+        investmentStatus.textContent = "Please enter a valid positive amount.";
+        return;
+    }
+    if (gameData.money < amount) {
+        investmentStatus.textContent = "You don't have enough money!";
+        return;
+    }
+
+    gameData.money -= amount;
+    gameData.investmentTotal += amount;
+    investmentStatus.textContent = `${amount} coins invested! Wait for the quarterly update.`;
+    
+    investmentAmountInput.value = '';
+    updateUI();
+}
+
+/**
+ * Processes investment returns or losses based on a random factor.
+ */
+function processInvestments() {
+    if (gameData.investmentTotal === 0) return;
+
+    // Base return is -5% to +15%
+    const investmentFactor = Math.random() * 0.20 - 0.05; 
+    const returnAmount = Math.floor(gameData.investmentTotal * investmentFactor);
+
+    if (returnAmount > 0) {
+        gameData.money += returnAmount;
+        statusMessage.textContent = `Investment Success! Gained ${returnAmount} coins (${(investmentFactor * 100).toFixed(1)}%).`;
+    } else if (returnAmount < 0) {
+        gameData.investmentTotal += returnAmount; // Reduce total investment
+        statusMessage.textContent = `Investment Loss! Lost ${Math.abs(returnAmount)} from total investment.`;
+    } else {
+        statusMessage.textContent = `Investment remained neutral this quarter.`;
+    }
+    
+    updateUI();
+}
+
+/**
+ * Updates the Investment Modal UI with current totals.
+ */
+function updateInvestmentModalUI() {
+    investmentTotalDisplay.textContent = gameData.investmentTotal;
+    investmentReturnDisplay.textContent = `Quarterly return: -5% to +15% (Invested: ${gameData.investmentTotal})`;
+}
+
+// --- Bank Logic (Savings) ---
+
+/**
+ * Handles the deposit to savings.
+ */
+function depositSavings() {
+    const amount = parseInt(savingsAmountInput.value, 10);
+    if (isNaN(amount) || amount <= 0) {
+        document.getElementById('savings-status').textContent = "Please enter a valid positive amount.";
+        return;
+    }
+    if (gameData.money < amount) {
+        document.getElementById('savings-status').textContent = "You don't have enough money!";
+        return;
+    }
+
+    gameData.money -= amount;
+    gameData.savingsTotal += amount;
+    document.getElementById('savings-status').textContent = `${amount} coins deposited into savings.`;
+    
+    savingsAmountInput.value = '';
+    updateUI();
+}
+
+/**
+ * Handles the withdrawal from savings.
+ */
+function withdrawSavings() {
+    const amount = parseInt(savingsAmountInput.value, 10);
+    if (isNaN(amount) || amount <= 0) {
+        document.getElementById('savings-status').textContent = "Please enter a valid positive amount.";
+        return;
+    }
+    if (gameData.savingsTotal < amount) {
+        document.getElementById('savings-status').textContent = "You don't have enough in savings to withdraw that amount!";
+        return;
+    }
+
+    gameData.money += amount;
+    gameData.savingsTotal -= amount;
+    document.getElementById('savings-status').textContent = `${amount} coins withdrawn from savings.`;
+
+    savingsAmountInput.value = '';
+    updateUI();
+}
+
+/**
+ * Updates the Bank Modal UI with current totals and interest rate.
+ */
+function updateBankModalUI() {
+    savingsTotalDisplay.textContent = gameData.savingsTotal;
+    let rate = SAVINGS_INTEREST_RATE;
+    if (gameData.researchCompleted.includes('advanced_banking')) {
+        rate *= 1.5;
+        savingsInterestDisplay.textContent = `Quarterly Interest Rate: ${(rate * 100).toFixed(1)}% (Research Active)`;
+    } else {
+        savingsInterestDisplay.textContent = `Quarterly Interest Rate: ${(rate * 100).toFixed(1)}%`;
+    }
+}
+
+// --- Store Logic ---
+
+/**
+ * Renders the items available in the store modal.
+ */
+function updateStoreModalUI() {
+    storeItemsList.innerHTML = '';
+    
+    // Regular Items
+    for (const key in INVENTORY_ITEMS) {
+        const item = INVENTORY_ITEMS[key];
+        const li = document.createElement('li');
+        li.className = 'flex justify-between items-center p-2 border-b';
+        li.innerHTML = `
+            <span>${item.name} (${item.price} coins)</span>
+            <button class="action-btn text-xs bg-purple-500 hover:bg-purple-600 text-white p-1 rounded-lg" onclick="buyItem('${key}')">Buy</button>
+        `;
+        storeItemsList.appendChild(li);
+    }
+
+    // Caretaker
+    if (!gameData.isCaretakerActive) {
+        caretakerStatus.innerHTML = `
+            <p class="font-bold text-lg">Caretaker</p>
+            <p>Purchase the Caretaker for ${CARETAKER_PURCHASE_PRICE} coins to automate basic Mii care (feeding, cheering up, and healing the sick) when they fall below ${CARETAKER_THRESHOLD}% status.</p>
+            <button class="action-btn bg-yellow-500 hover:bg-yellow-600 text-white p-2 rounded-lg mt-2" onclick="buyCaretaker()">Hire Caretaker</button>
+        `;
+    } else {
+        caretakerStatus.innerHTML = '<p class="font-bold text-lg text-green-600">Caretaker Active!</p>';
+    }
+}
+
+/**
+ * Handles buying an item from the store.
+ * @param {string} itemKey - Key of the item to buy.
+ */
+function buyItem(itemKey) {
+    const item = INVENTORY_ITEMS[itemKey];
+    if (gameData.money >= item.price) {
+        gameData.money -= item.price;
+        gameData.inventory[itemKey] = (gameData.inventory[itemKey] || 0) + 1;
+        statusMessage.textContent = `Bought 1 ${item.name}.`;
+        updateUI();
+    } else {
+        statusMessage.textContent = `Not enough money to buy ${item.name}.`;
+    }
+}
+
+/**
+ * Handles purchasing the Caretaker service.
+ */
+function buyCaretaker() {
+    if (gameData.money >= CARETAKER_PURCHASE_PRICE) {
+        gameData.money -= CARETAKER_PURCHASE_PRICE;
+        gameData.isCaretakerActive = true;
+        statusMessage.textContent = `Caretaker hired! Basic Mii needs are now automated.`;
+        updateUI();
+    } else {
+        statusMessage.textContent = `Not enough money to hire the Caretaker.`;
+    }
+}
+
+// --- Town Hall Logic ---
+
+/**
+ * Renders the Town Hall modal content, including research and investments.
+ */
+function updateTownHallModalUI() {
+    townHallContent.innerHTML = '';
+    researchList.innerHTML = '';
+
+    if (!gameData.townHallOwned) {
+        townHallContent.innerHTML = `
+            <p class="text-xl font-bold mb-4">Town Hall</p>
+            <p>The Town Hall is the center for civic improvement and long-term research. You must purchase the land for 5000 coins to begin building and research.</p>
+            <button class="action-btn bg-red-600 hover:bg-red-700 text-white p-2 rounded-lg mt-4" onclick="buyTownHall()">Purchase Town Hall Land (5000 coins)</button>
+        `;
+        return;
+    }
+
+    townHallContent.innerHTML = `
+        <p class="text-xl font-bold mb-4 text-green-700">Town Hall Operational</p>
+        <p class="mb-4">Invest money into the Town Hall for general town improvements. These funds are used for long-term projects and may offer a small, steady return.</p>
+        <div class="flex items-center space-x-2">
+            <input type="number" id="town-hall-money" placeholder="Amount to Invest" class="p-2 border rounded-lg w-full">
+            <button class="action-btn bg-indigo-500 hover:bg-indigo-600 text-white p-2 rounded-lg" onclick="investTownHall()">Invest</button>
+        </div>
+    `;
+    
+    // Research Section
+    for (const key in TOWN_HALL_RESEARCH) {
+        const [description, cost, prereq] = TOWN_HALL_RESEARCH[key];
+        const isCompleted = gameData.researchCompleted.includes(key);
+        const prereqMet = !prereq || gameData.researchCompleted.includes(prereq);
+        
+        const li = document.createElement('li');
+        li.className = 'p-2 border-b flex justify-between items-center';
+        
+        if (isCompleted) {
+            li.innerHTML = `
+                <span>${description}</span>
+                <span class="text-green-600 font-bold">Completed ✅</span>
+            `;
+        } else if (!prereqMet) {
+            li.innerHTML = `
+                <span>${description} (${cost} coins)</span>
+                <span class="text-red-500 text-sm">Requires: ${TOWN_HALL_RESEARCH[prereq][0]}</span>
+            `;
+        } else {
+            li.innerHTML = `
+                <span>${description} (${cost} coins)</span>
+                <button class="action-btn text-xs bg-teal-500 hover:bg-teal-600 text-white p-1 rounded-lg" onclick="startResearch('${key}', ${cost})">Research</button>
+            `;
+        }
+        researchList.appendChild(li);
+    }
+}
+
+/**
+ * Handles the purchase of the Town Hall.
+ */
+function buyTownHall() {
+    const cost = 5000;
+    if (gameData.money >= cost) {
+        gameData.money -= cost;
+        gameData.townHallOwned = true;
+        statusMessage.textContent = `Town Hall land purchased! You can now start research and investments.`;
+        updateUI();
+    } else {
+        statusMessage.textContent = `Not enough money to buy the Town Hall land (Requires ${cost} coins).`;
+    }
+}
+
+/**
+ * Handles investing money into the Town Hall.
+ */
+function investTownHall() {
+    const input = document.getElementById('town-hall-money');
+    const amount = parseInt(input.value, 10);
+    if (isNaN(amount) || amount <= 0) {
+        statusMessage.textContent = "Please enter a valid positive amount for Town Hall investment.";
+        return;
+    }
+    if (gameData.money < amount) {
+        statusMessage.textContent = "You don't have enough money!";
+        return;
+    }
+
+    gameData.money -= amount;
+    // This is purely for flavor and future expansion; it doesn't currently affect gameData.investmentTotal
+    statusMessage.textContent = `${amount} coins invested into Town Hall improvements. Thank you!`;
+    
+    input.value = '';
+    updateUI();
+}
+
+/**
+ * Handles starting a research project.
+ * @param {string} researchKey - Key of the research to start.
+ * @param {number} cost - Cost of the research.
+ */
+function startResearch(researchKey, cost) {
+    if (gameData.money >= cost) {
+        const [, , prereq] = TOWN_HALL_RESEARCH[researchKey];
+        const prereqMet = !prereq || gameData.researchCompleted.includes(prereq);
+        
+        if (!prereqMet) {
+            statusMessage.textContent = `Cannot start research: Prerequisite not met.`;
+            return;
+        }
+
+        gameData.money -= cost;
+        gameData.researchCompleted.push(researchKey);
+        statusMessage.textContent = `${TOWN_HALL_RESEARCH[researchKey][0]} research completed!`;
+        updateUI();
+    } else {
+        statusMessage.textContent = `Not enough money to start research (Requires ${cost} coins).`;
+    }
+}
+
+// --- Mii Interaction Logic: Jobs ---
+
+/**
+ * Shows the job assignment modal for a selected Mii.
+ * @param {number} index - Index of the Mii in miiList.
+ */
+function showJobAssignmentModal(index) {
+    currentMiiIndex = index;
+    const mii = miiList[index];
+    
+    jobMiiName.textContent = mii.name;
+    jobAssignmentSelect.innerHTML = ''; // Clear previous options
+    
+    for (const key in JOBS) {
+        const job = JOBS[key];
+        const option = document.createElement('option');
+        option.value = key;
+        option.textContent = `${job.name} (Req. Skill: ${job.requiredSkill})`;
+        if (mii.job === key) {
+            option.selected = true;
+        }
+        if (mii.skill < job.requiredSkill) {
+            option.disabled = true;
+            option.textContent += ' - Skill Too Low';
+        }
+        jobAssignmentSelect.appendChild(option);
+    }
+    
+    jobAssignmentModal.classList.remove('hidden');
+}
+
+/**
+ * Assigns the selected job to the Mii.
+ */
+function assignJob() {
+    const mii = miiList[currentMiiIndex];
+    const newJobKey = jobAssignmentSelect.value;
+    const job = JOBS[newJobKey];
+
+    if (mii.skill < job.requiredSkill) {
+        statusMessage.textContent = `${mii.name}'s skill is too low for ${job.name}.`;
+        return;
+    }
+
+    mii.job = newJobKey;
+    statusMessage.textContent = `${mii.name} is now a ${job.name}.`;
+    
+    jobAssignmentModal.classList.add('hidden');
+    updateUI();
+}
+
+/**
+ * Allows a Mii to perform their job immediately (manual mode action).
+ * @param {number} index - Index of the Mii in miiList.
+ */
+function manualWork(index) {
+    const mii = miiList[index];
+    if (mii.energy < 20) {
+        statusMessage.textContent = `${mii.name} is too tired to work! Energy is too low.`;
+        return;
+    }
+
+    if (mii.job === 'none') {
+        statusMessage.textContent = `${mii.name} needs a job before they can work.`;
+        return;
+    }
+
+    const pay = calculatePay(mii);
+    gameData.money += pay;
+    mii.energy = Math.max(0, mii.energy - 15); // Higher energy cost for manual work
+    mii.skill = Math.min(MAX_SKILL, mii.skill + SKILL_GAIN_RATE * 2); // Higher skill gain for manual
+    statusMessage.textContent = `${mii.name} manually worked and earned ${pay} coins! Skill significantly increased.`;
+    
+    updateUI();
+}
+
+// --- Mii Interaction Logic: Gifts ---
+
+/**
+ * Shows the gift modal for a selected Mii.
+ * @param {number} index - Index of the Mii in miiList.
+ */
+function showGiftModal(index) {
+    currentMiiIndex = index;
+    const mii = miiList[index];
+    
+    giftMiiName.textContent = mii.name;
+    giftSelect.innerHTML = '';
+    
+    let hasItems = false;
+    for (const key in gameData.inventory) {
+        if (gameData.inventory[key] > 0) {
+            hasItems = true;
+            const item = INVENTORY_ITEMS[key];
+            const option = document.createElement('option');
+            option.value = key;
+            option.textContent = `${item.name} (${gameData.inventory[key]} in stock)`;
+            giftSelect.appendChild(option);
+        }
+    }
+    
+    if (!hasItems) {
+        giftSelect.innerHTML = '<option value="" disabled selected>No items to gift</option>';
+    }
+    
+    giftModal.classList.remove('hidden');
+}
+
+/**
+ * Gives the selected gift to the Mii.
+ */
+function giveGift() {
+    const mii = miiList[currentMiiIndex];
+    const itemKey = giftSelect.value;
+    
+    if (!itemKey) {
+        statusMessage.textContent = "Please select an item to give.";
+        return;
+    }
+
+    if (gameData.inventory[itemKey] > 0) {
+        const item = INVENTORY_ITEMS[itemKey];
+        gameData.inventory[itemKey]--;
+        
+        // Apply effects
+        if (item.happiness) {
+            mii.happiness = Math.min(100, mii.happiness + item.happiness);
+        }
+        if (item.energy) {
+            mii.energy = Math.min(100, mii.energy + item.energy);
+        }
+        if (item.skill) {
+            mii.skill = Math.min(MAX_SKILL, mii.skill + item.skill);
+        }
+        if (item.love) {
+            // Apply a small happiness bonus too for any love gift
+            mii.happiness = Math.min(100, mii.happiness + 5); 
+        }
+
+        // Special handling for curing illness
+        if (mii.isIll && itemKey === 'apple') {
+            mii.isIll = false;
+            statusMessage.textContent = `${mii.name} was cured by the Apple!`;
+        }
+
+        statusMessage.textContent = `${mii.name} used 1 ${item.name}. Status updated.`;
+        
+        giftModal.classList.add('hidden');
+        updateUI();
+
+    } else {
+        statusMessage.textContent = `You do not have a ${INVENTORY_ITEMS[itemKey].name} to give.`;
+    }
+}
+
+// --- Mii Interaction Logic: Relationships ---
+
+/**
+ * Shows the relationship modal for a selected Mii.
+ * @param {number} index - Index of the Mii in miiList.
+ */
+function showRelationshipModal(index) {
+    currentMiiIndex = index;
+    const mii = miiList[index];
+    
+    miiNameRel.textContent = mii.name;
+    relationshipList.innerHTML = '';
+    
+    // Only show potential partners who are adults, not the Mii itself
+    const potentialPartners = miiList.filter(m => m.id !== mii.id && !m.isChild); 
+
+    if (potentialPartners.length === 0) {
+        relationshipList.innerHTML = '<p class="p-2 text-gray-500">No other Miis available for interaction.</p>';
+    }
+
+    potentialPartners.forEach(partner => {
+        const isPartner = mii.relationship.partnerId === partner.id;
+        const currentLoveScore = isPartner ? mii.relationship.loveScore : 0;
+        
+        const li = document.createElement('li');
+        li.className = 'p-2 border-b flex justify-between items-center';
+        li.innerHTML = `
+            <span>${partner.name} (${partner.gender})</span>
+            <div class="flex items-center space-x-2">
+                ${isPartner 
+                    ? `<span class="text-pink-600 font-bold mr-2">💖 Love: ${currentLoveScore}</span>`
+                    : ''}
+                <button class="action-btn text-xs bg-pink-500 hover:bg-pink-600 text-white p-1 rounded-lg" onclick="interactWithMii('${mii.id}', '${partner.id}', 'flirt')">Flirt</button>
+                <button class="action-btn text-xs bg-green-500 hover:bg-green-600 text-white p-1 rounded-lg" onclick="interactWithMii('${mii.id}', '${partner.id}', 'gift_love')">Gift (Love)</button>
+                ${isPartner && currentLoveScore >= 80 
+                    ? `<button class="action-btn text-xs bg-red-600 hover:bg-red-700 text-white p-1 rounded-lg" onclick="attemptProposal('${mii.id}', '${partner.id}')">Propose</button>`
+                    : ''}
+            </div>
+        `;
+        relationshipList.appendChild(li);
+    });
+    
+    // Add Party button
+    const partyLi = document.createElement('li');
+    partyLi.className = 'p-2 border-t mt-2 flex justify-between items-center bg-yellow-100 rounded-lg';
+    partyLi.innerHTML = `
+        <span>Throw a Town Party (${PARTY_COST} coins)</span>
+        <button class="action-btn text-xs bg-yellow-500 hover:bg-yellow-600 text-white p-1 rounded-lg" onclick="throwParty()">Throw Party</button>
+    `;
+    relationshipList.appendChild(partyLi);
+
+    relationshipModal.classList.remove('hidden');
+}
+
+/**
+ * Handles social interaction between two Miis.
+ * @param {string} miiId1 - ID of the acting Mii.
+ * @param {string} miiId2 - ID of the target Mii.
+ * @param {string} interactionType - 'flirt' or 'gift_love'.
+ */
+function interactWithMii(miiId1, miiId2, interactionType) {
+    const mii1 = miiList.find(m => m.id === miiId1);
+    const mii2 = miiList.find(m => m.id === miiId2);
+    
+    if (mii1.energy < 10) {
+        statusMessage.textContent = `${mii1.name} is too tired to socialize.`;
+        return;
+    }
+    
+    mii1.energy = Math.max(0, mii1.energy - 10);
+    let loveGain = 0;
+    
+    // Check if they are already in a relationship
+    let isCouple = mii1.relationship.partnerId === mii2.id;
+    
+    if (interactionType === 'flirt') {
+        const success = Math.random() > 0.4; // 60% chance of success
+        if (success) {
+            loveGain = isCouple ? 5 : 10; // Higher gain if not yet a couple
+            statusMessage.textContent = `${mii1.name} successfully flirted with ${mii2.name}.`;
+        } else {
+            loveGain = isCouple ? -2 : -5;
+            statusMessage.textContent = `${mii1.name}'s flirt attempt failed. Awkward.`;
+        }
+    } else if (interactionType === 'gift_love') {
+        if (gameData.inventory.flower > 0) {
+            gameData.inventory.flower--;
+            loveGain = isCouple ? 15 : 20;
+            statusMessage.textContent = `${mii1.name} gave ${mii2.name} a Flower. Romantic!`;
+        } else {
+            statusMessage.textContent = `${mii1.name} needs a Flower to give!`;
+            mii1.energy = Math.min(100, mii1.energy + 10); // Refund energy
+            updateUI();
+            return;
+        }
+    }
+    
+    // Social Science research increases relationship gains
+    if (gameData.researchCompleted.includes('social_science')) {
+        loveGain = Math.floor(loveGain * 1.5);
+    }
+    
+    if (isCouple) {
+        mii1.relationship.loveScore = Math.min(100, mii1.relationship.loveScore + loveGain);
+        mii2.relationship.loveScore = mii1.relationship.loveScore; // Keep scores symmetrical
+        
+        if (mii1.relationship.loveScore >= 100) {
+            statusMessage.textContent = `${mii1.name} and ${mii2.name} are madly in love! Time to propose?`;
+        }
+    } else if (loveGain > 0) {
+        // Attempt to start a relationship if loveScore reaches 50
+        const currentLoveScoreMii1 = mii1.requests.find(r => r.type === 'love_score' && r.targetId === mii2.id)?.value || 0;
+        const newLoveScoreMii1 = Math.min(100, currentLoveScoreMii1 + loveGain);
+        
+        // Use requests array to track unrequited or developing pre-relationship feelings
+        let reqIndex = mii1.requests.findIndex(r => r.type === 'love_score' && r.targetId === mii2.id);
+        if (reqIndex !== -1) {
+            mii1.requests[reqIndex].value = newLoveScoreMii1;
+        } else {
+            mii1.requests.push({ type: 'love_score', targetId: mii2.id, value: newLoveScoreMii1 });
+        }
+        
+        if (newLoveScoreMii1 >= 50) {
+            establishRelationship(mii1, mii2, newLoveScoreMii1);
+            statusMessage.textContent = `${mii1.name} and ${mii2.name} started dating!`;
+        } else {
+            statusMessage.textContent += ` (${mii2.name} likes ${mii1.name} more now: ${newLoveScoreMii1})`;
+        }
+    }
+    
+    updateUI();
+    showRelationshipModal(currentMiiIndex); // Re-render the modal to show updated score
+}
+
+/**
+ * Throws a town-wide party, boosting all Mii happiness.
+ */
+function throwParty() {
+    if (gameData.money < PARTY_COST) {
+        statusMessage.textContent = `Need ${PARTY_COST} coins to throw a party!`;
+        return;
+    }
+
+    gameData.money -= PARTY_COST;
+    miiList.forEach(mii => {
+        mii.happiness = Math.min(100, mii.happiness + PARTY_HAPPINESS_BONUS);
+    });
+    
+    statusMessage.textContent = `A massive party was thrown! Everyone's happiness increased by ${PARTY_HAPPINESS_BONUS}!`;
+    relationshipModal.classList.add('hidden');
+    updateUI();
+}
+
+/**
+ * Formalizes a dating/committed relationship between two Miis.
+ * @param {object} mii1 
+ * @param {object} mii2 
+ * @param {number} initialLoveScore 
+ */
+function establishRelationship(mii1, mii2, initialLoveScore) {
+    // Set up relationship for Mii 1
+    mii1.relationship.partnerId = mii2.id;
+    mii1.relationship.loveScore = initialLoveScore;
+    
+    // Set up relationship for Mii 2 (symmetrical)
+    mii2.relationship.partnerId = mii1.id;
+    mii2.relationship.loveScore = initialLoveScore;
+    
+    // Remove temporary love_score requests
+    mii1.requests = mii1.requests.filter(r => !(r.type === 'love_score' && r.targetId === mii2.id));
+    mii2.requests = mii2.requests.filter(r => !(r.type === 'love_score' && r.targetId === mii1.id));
+}
+
+/**
+ * Handles a marriage proposal attempt.
+ * @param {string} miiId1 - ID of the proposing Mii.
+ * @param {string} miiId2 - ID of the target Mii.
+ */
+function attemptProposal(miiId1, miiId2) {
+    const mii1 = miiList.find(m => m.id === miiId1);
+    const mii2 = miiList.find(m => m.id === miiId2);
+
+    if (mii1.relationship.loveScore < 80) {
+        statusMessage.textContent = `The love score is too low (${mii1.relationship.loveScore}). They need to be closer to propose!`;
+        return;
+    }
+
+    // High success chance if love score is high
+    const successChance = mii1.relationship.loveScore / 100;
+    const success = Math.random() < successChance;
+
+    if (success) {
+        // Marriage! Future expansion: baby creation, shared house, etc.
+        mii1.job = 'none'; // Unemployed to focus on family
+        mii2.job = 'none';
+        mii1.happiness = 100;
+        mii2.happiness = 100;
+        
+        statusMessage.textContent = `🎉 CONGRATULATIONS! ${mii1.name} and ${mii2.name} are married!`;
+        // In a more complex game, you would change partnerId to marriageId/houseId, but here we just leave partnerId.
+    } else {
+        // Failed proposal
+        mii1.happiness = Math.max(0, mii1.happiness - 20);
+        mii2.relationship.loveScore = Math.max(0, mii2.relationship.loveScore - 15);
+        statusMessage.textContent = `💔 ${mii2.name} rejected ${mii1.name}'s proposal! This has severely impacted their relationship and happiness.`;
+    }
+
+    relationshipModal.classList.add('hidden');
+    updateUI();
+}
+
+// --- Goal & Achievement Logic (Basic) ---
+
+/**
+ * Checks if any goals have been achieved and adds new ones.
+ */
+function checkGoals() {
+    // Goal 1: First Mii
+    if (miiList.length >= 1 && !gameData.currentGoals.find(g => g.id === 'first_mii')) {
+        gameData.currentGoals.push({ id: 'first_mii', description: 'Created your first Mii.' });
+        gameData.money += 25; // Reward
+    }
+
+    // Goal 2: First 1000 coins
+    if (gameData.money >= 1000 && !gameData.currentGoals.find(g => g.id === 'first_k')) {
+        gameData.currentGoals.push({ id: 'first_k', description: 'Reached 1000 coins.' });
+        gameData.money += 100;
+    }
+
+    // Goal 3: First job assigned
+    if (miiList.some(mii => mii.job !== 'none') && !gameData.currentGoals.find(g => g.id === 'first_job')) {
+        gameData.currentGoals.push({ id: 'first_job', description: 'Assigned your first job.' });
+        gameData.money += 50;
+    }
+}
+
+// --- Event Listeners and Setup ---
+
+/**
+ * Sets up all necessary DOM event listeners.
+ */
+function setupEventListeners() {
+    // Creation Screen Listener
+    createMiiBtn.addEventListener('click', () => {
+        const name = newMiiNameInput.value.trim();
+        const personality = newMiiPersonalitySelect.value;
+        const gender = newMiiGenderSelect.value;
+        
+        if (name && personality && gender) {
+            createMii(name, personality, gender);
+            newMiiNameInput.value = '';
+            newMiiModal.classList.add('hidden');
+        } else {
+            alert("Please fill in all Mii details.");
+        }
+    });
+
+    // Button Listeners to open modals
+    document.getElementById('open-new-mii-modal').addEventListener('click', () => newMiiModal.classList.remove('hidden'));
+    document.getElementById('open-store-modal').addEventListener('click', () => {
+        updateStoreModalUI();
+        storeModal.classList.remove('hidden');
+    });
+    document.getElementById('open-investment-modal').addEventListener('click', () => {
+        updateInvestmentModalUI();
+        investmentModal.classList.remove('hidden');
+    });
+    document.getElementById('open-bank-modal').addEventListener('click', () => {
+        updateBankModalUI();
+        bankModal.classList.remove('hidden');
+    });
+    document.getElementById('open-town-hall-modal').addEventListener('click', () => {
+        updateTownHallModalUI();
+        townHallModal.classList.remove('hidden');
+    });
+    document.getElementById('reset-game-btn').addEventListener('click', resetGame);
+    
+    // Modal Interaction Listeners
+    document.getElementById('invest-btn').addEventListener('click', investMoney);
+    document.getElementById('deposit-btn').addEventListener('click', depositSavings);
+    document.getElementById('withdraw-btn').addEventListener('click', withdrawSavings);
+    document.getElementById('assign-job-btn').addEventListener('click', assignJob);
+    document.getElementById('give-gift-btn').addEventListener('click', giveGift);
+    
+    // Modal Closing Listeners (General)
+    document.querySelectorAll('.close-modal').forEach(button => {
+        button.addEventListener('click', (e) => {
+            e.target.closest('.modal').classList.add('hidden');
+        });
+    });
+
+    window.addEventListener('click', function(event) {
+        if (event.target.classList.contains('modal')) {
+            event.target.classList.add('hidden');
+        }
+    });
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            const modals = [storeModal, newMiiModal, investmentModal, relationshipModal, bankModal, townHallModal, jobAssignmentModal, giftModal];
+            modals.forEach(modal => modal.classList.add('hidden'));
+        }
+    });
+    
+    // Auto-save every 30 seconds
+    setInterval(saveGame, 30000);
+}
+
+// --- Application Entry Point ---
+// This listener resolves the error by ensuring the initGame function is called 
+// only after the entire script (including the function definition) has been parsed.
+document.addEventListener('DOMContentLoaded', initGame);
