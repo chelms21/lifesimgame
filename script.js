@@ -14,12 +14,12 @@ let gameData = {
     mode: 'manual', 
     difficulty: 'normal', 
     townEvents: [], 
-    houses: [], // NEW: [{ id: number, occupants: [miiId1, miiId2] }]
-    facilities: {} // NEW: { park: true, restaurant: false }
+    houses: [], // [{ id: number, occupants: [miiId1, miiId2] }]
+    facilities: {} // { park: true, restaurant: false }
 }
 
 let gameLoop = null; 
-const SAVE_KEY = 'miiLifeSaveDataV9'; // Updated Save Key
+const SAVE_KEY = 'miiLifeSaveDataV9'; 
 const DECAY_RATE = 2; 
 const UPDATE_INTERVAL = 3000; 
 const REQUEST_CHANCE = 0.03; 
@@ -35,7 +35,7 @@ const PARTY_COST = 150;
 const PARTY_HAPPINESS_BONUS = 30;
 const SAVINGS_INTEREST_RATE = 0.01; 
 
-// --- NEW Town Structure Constants ---
+// --- Town Structure Constants ---
 const HOUSE_COST = 300;
 const HOUSE_CAPACITY = 2; // Max Miis per house
 const HOMELESS_HAPPINESS_PENALTY = 5;
@@ -43,14 +43,11 @@ const HOMELESS_HAPPINESS_PENALTY = 5;
 const FACILITY_COSTS = {
     'park': 500,
     'restaurant': 1000,
-    // 'hospital': 1500 // Deferred for next step (Illness)
 };
 const FACILITY_BONUSES = {
     'park': { happiness: 2, log: 'A beautiful park makes everyone a little happier.', icon: '🌳' },
     'restaurant': { foodQuality: 1.5, log: 'The new restaurant means better food is available!', icon: '🍽️' },
-    // 'hospital': { health: 0, log: 'The hospital will help with sickness. (Feature coming soon)', icon: '🏥' }
 };
-// --- END NEW Town Structure Constants ---
 
 // --- Job Definitions ---
 const JOBS = {
@@ -147,7 +144,7 @@ const jobMiiName = document.getElementById('job-mii-name');
 const jobCurrentJob = document.getElementById('job-current-job');
 const jobListDiv = document.getElementById('job-list');
 
-// Build Modal Elements // NEW
+// Build Modal Elements
 const buildModal = document.getElementById('build-modal');
 const buildMoney = document.getElementById('build-money');
 const houseCapacitySpan = document.getElementById('house-capacity');
@@ -248,7 +245,7 @@ function renderCurrentMiiState() {
     }
     relationshipStat.textContent = statusText;
     
-    // NEW: Display Housing Status
+    // Housing Status
     document.getElementById('housing-stat').textContent = getHouseStatus(mii);
 
     happinessStat.textContent = Math.round(mii.happiness);
@@ -319,7 +316,6 @@ function initGame() {
 function showCreationScreen() {
     creationScreen.classList.remove('hidden');
     gameScreen.classList.add('hidden');
-    // Hide all modals
     [newMiiModal, investmentModal, relationshipModal, bankModal, jobModal, buildModal].forEach(m => m.classList.add('hidden'));
     updateCreationScreenState();
 }
@@ -344,7 +340,6 @@ function startGame() {
 }
 
 function showGameScreen() {
-    // Hide all modals
     [creationScreen, newMiiModal, investmentModal, relationshipModal, bankModal, jobModal, buildModal].forEach(m => m.classList.add('hidden'));
     gameScreen.classList.remove('hidden');
     
@@ -364,7 +359,6 @@ function showGameScreen() {
 // --- Mii Creation/Management ---
 
 function assignMiiToHouse(mii) {
-    // Try to find a house with space
     const availableHouse = gameData.houses.find(h => h.occupants.length < HOUSE_CAPACITY);
     
     if (availableHouse) {
@@ -373,7 +367,6 @@ function assignMiiToHouse(mii) {
         return true;
     }
     
-    // If no house found, mii remains homeless
     mii.houseId = null; 
     return false;
 }
@@ -382,7 +375,6 @@ function unassignMiiFromHouse(mii) {
      if (mii.houseId) {
         const house = gameData.houses.find(h => h.id === mii.houseId);
         if (house) {
-            // Remove Mii ID from the house's occupant list
             house.occupants = house.occupants.filter(id => id !== mii.id);
         }
         mii.houseId = null;
@@ -429,12 +421,10 @@ function addMiiToTown() {
             friends: [] 
         },
         job: BASE_JOB,
-        houseId: null // NEW
+        houseId: null
     };
     
     miiList.push(newMii);
-    
-    // NEW: Assign house on creation
     assignMiiToHouse(newMii);
     
     nameInput.value = '';
@@ -481,12 +471,10 @@ function addNewMii() {
             friends: [] 
         },
         job: BASE_JOB, 
-        houseId: null // NEW
+        houseId: null
     };
     
     miiList.push(newMii);
-    
-    // NEW: Assign house on creation
     assignMiiToHouse(newMii);
 
     closeNewMiiModal();
@@ -542,7 +530,7 @@ function renderResidentList() {
         let statusIcon = mii.gender === 'male' ? '♂️' : '♀️';
         let statusClass = '';
 
-        if (!mii.houseId) { // NEW: Homeless status takes priority
+        if (!mii.houseId) {
             statusIcon = '🚨';
             statusClass = 'homeless';
         } else if (mii.relationship.status !== 'single') {
@@ -655,7 +643,7 @@ function assignJob(jobKey) {
     saveGame();
 }
 
-// --- NEW: Build Management System (Houses & Facilities) ---
+// --- Build Management System (Houses & Facilities) ---
 
 function openBuildModal() {
     buildModal.classList.remove('hidden');
@@ -737,7 +725,7 @@ function buildHouse() {
 }
 
 function buildFacility(key, cost) {
-    if (gameData.facilities[key]) return; // Already built
+    if (gameData.facilities[key]) return; 
     
     if (gameData.money < cost) {
         alert(`You need 💰${cost} to build the ${key}.`);
@@ -786,7 +774,6 @@ function renderRelationshipActions(mii) {
     );
     
     if (mii.relationship.status === 'single') {
-        // Dating Actions
         if (potentialPartners.length > 0) {
             const select = document.createElement('select');
             select.id = 'date-target-select';
@@ -818,7 +805,6 @@ function renderRelationshipActions(mii) {
         }
         
     } else if (mii.relationship.status === 'dating') {
-        // Proposal/Breakup Actions (Dating)
         const partner = miiList.find(m => m.id === mii.relationship.partnerId);
         
         relActionsDiv.innerHTML = `
@@ -828,7 +814,6 @@ function renderRelationshipActions(mii) {
         `;
         
     } else if (mii.relationship.status === 'spouse') {
-        // Breakup Actions (Spouse)
         const partner = miiList.find(m => m.id === mii.relationship.partnerId);
         
         relActionsDiv.innerHTML = `
@@ -837,7 +822,6 @@ function renderRelationshipActions(mii) {
         `;
     }
     
-    // Friendship Section
     const potentialFriends = miiList.filter(
         m => m.id !== mii.id && 
              !mii.relationship.friends.includes(m.id) &&
@@ -903,7 +887,6 @@ function attemptFriendship(targetId) {
     if (!mii || !target) return;
 
     if (Math.random() < FRIENDSHIP_SUCCESS_CHANCE) {
-        // Success
         mii.relationship.friends.push(target.id);
         target.relationship.friends.push(mii.id);
         
@@ -912,7 +895,6 @@ function attemptFriendship(targetId) {
         
         logEvent(`🤝 Friendship: ${mii.name} and ${target.name} are now friends!`);
     } else {
-        // Failure
         mii.happiness = Math.max(0, mii.happiness - 5);
         logEvent(`😔 ${mii.name}'s attempt to befriend ${target.name} failed.`);
     }
@@ -935,7 +917,6 @@ function attemptDating(targetId) {
     const successChance = (1 - DATING_FAIL_CHANCE) * happinessFactor;
 
     if (Math.random() < successChance) {
-        // Success
         mii.relationship.status = 'dating';
         mii.relationship.partnerId = target.id;
         target.relationship.status = 'dating';
@@ -944,17 +925,15 @@ function attemptDating(targetId) {
         mii.happiness = Math.min(100, mii.happiness + DATING_HAPPINESS_BONUS);
         target.happiness = Math.min(100, target.happiness + DATING_HAPPINESS_BONUS);
         
-        // NEW: Try to move target into Mii's house, or find a new house
         if (mii.houseId) {
-            unassignMiiFromHouse(target); // Ensure they leave their old home if they had one
-            assignMiiToHouse(target); // Try to move into Mii's house (will only work if Mii's house is not full)
+            unassignMiiFromHouse(target); 
+            assignMiiToHouse(target); 
             if (target.houseId !== mii.houseId) {
                  logEvent(`❤️ ${mii.name} and ${target.name} are dating, but there was no room to move in!`);
             } else {
                  logEvent(`❤️ ${mii.name} and ${target.name} are now dating and moved in together!`); 
             }
         } else {
-             // If mii is homeless, they both become homeless or move to an empty house.
              unassignMiiFromHouse(mii); 
              unassignMiiFromHouse(target);
              const emptyHouse = gameData.houses.find(h => h.occupants.length === 0);
@@ -968,7 +947,6 @@ function attemptDating(targetId) {
         }
         
     } else {
-        // Failure
         mii.happiness = Math.max(0, mii.happiness - 15);
         miiMessage.textContent = `💔 ${target.name} gently let ${mii.name} down. Ouch.`;
         logEvent(`💔 ${mii.name} was rejected by ${target.name}.`); 
@@ -987,23 +965,15 @@ function attemptBreakup(partnerId) {
     
     if (confirm(`Are you sure ${mii.name} wants to break up with ${partner.name}? This will cause sadness!`)) {
         
-        // Find which house the partner is leaving
-        const oldHouseId = partner.houseId;
-
-        // Clear Mii's status (Mii stays in the house for now)
         mii.relationship.status = 'single';
         mii.relationship.partnerId = null;
         mii.happiness = Math.max(0, mii.happiness - BREAKUP_HAPPINESS_PENALTY);
         
-        // Clear Partner's status
         partner.relationship.status = 'single';
         partner.relationship.partnerId = null;
         partner.happiness = Math.max(0, partner.happiness - BREAKUP_HAPPINESS_PENALTY);
         
-        // NEW: Partner leaves the house
         unassignMiiFromHouse(partner);
-        
-        // Try to re-assign partner to another available house
         assignMiiToHouse(partner);
 
         logEvent(`😭 ${mii.name} and ${partner.name} broke up! ${partner.name} moved out (House: ${partner.houseId || 'None'}).`); 
@@ -1031,16 +1001,14 @@ function attemptProposal(partnerId) {
     const successChance = (mii.happiness + partner.happiness) / 200 * PROPOSAL_CHANCE;
 
     if (Math.random() < successChance) {
-        // Success
         mii.relationship.status = 'spouse';
         partner.relationship.status = 'spouse';
         mii.happiness = Math.min(100, mii.happiness + SPOUSE_HAPPINESS_BONUS);
         partner.happiness = Math.min(100, partner.happiness + SPOUSE_HAPPINESS_BONUS);
         
-        // NEW: Ensure they are in the same house (redundant if dating, but good for stability)
         if (mii.houseId && partner.houseId !== mii.houseId) {
             unassignMiiFromHouse(partner);
-            assignMiiToHouse(partner); // Try to move partner back in
+            assignMiiToHouse(partner); 
         }
 
         logEvent(`🔔 ${partner.name} said YES! ${mii.name} and ${partner.name} are now happily married! 💍`); 
@@ -1057,69 +1025,56 @@ function attemptProposal(partnerId) {
 // --- Main Game Loop Functions ---
 
 function updateAllMiiStats() {
-    // 1. Check for passive income
     gameData.money += Math.floor(gameData.investmentTotal / INVESTMENT_RATE);
-
-    // 2. Savings interest
     gameData.savingsTotal = Math.floor(gameData.savingsTotal * (1 + SAVINGS_INTEREST_RATE));
 
     const activeMiis = miiList.filter(m => !m.isDead);
 
-    // 3. Handle Caretaker if active
     if (gameData.isCaretakerActive) {
         handleCaretaker(activeMiis);
     }
     
-    // 4. Handle autonomous Mii events (if in automatic mode)
     if (gameData.mode === 'automatic') {
         handleAutonomousActions(activeMiis);
     }
 
-    // 5. Handle decay and death
     activeMiis.forEach(mii => {
         let happinessDecay = DECAY_RATE;
         let hungerDecay = DECAY_RATE;
 
         if (mii.isSleeping) {
-            // Regeneration when sleeping
             mii.happiness = Math.min(100, mii.happiness + 3);
-            mii.hunger = Math.max(0, mii.hunger - 1); // small hunger decay even when sleeping
+            mii.hunger = Math.max(0, mii.hunger - 1); 
             return; 
         }
 
-        // --- NEW: Decay Modifiers ---
-        
-        // A. Homeless Penalty
+        // --- Decay Modifiers ---
         if (!mii.houseId) {
             happinessDecay += HOMELESS_HAPPINESS_PENALTY;
         }
 
-        // B. Apply Facility Bonuses
         if (gameData.facilities.park) {
             happinessDecay -= FACILITY_BONUSES.park.happiness;
         }
 
-        // C. Standard Decay Modifiers
         if (mii.hunger < 50) {
-            happinessDecay += 2; // Sadder when hungry
+            happinessDecay += 2; 
         }
 
         if (mii.relationship.status === 'dating') {
-            happinessDecay -= 1; // Happier when dating
+            happinessDecay -= 1; 
         } else if (mii.relationship.status === 'spouse') {
-            happinessDecay -= 2; // Even happier when married
+            happinessDecay -= 2; 
         }
         
         if (mii.job === BASE_JOB) {
-            happinessDecay += 1; // Unemployed Miis decay faster
+            happinessDecay += 1; 
         }
-        // --- END NEW: Decay Modifiers ---
-
+        // --- End Decay Modifiers ---
 
         mii.hunger = Math.max(0, mii.hunger - hungerDecay);
         mii.happiness = Math.max(0, mii.happiness - happinessDecay);
 
-        // Request Generation & Decay
         if (!mii.currentRequest && Math.random() < REQUEST_CHANCE && mii.happiness < 70) {
             mii.currentRequest = REQUESTABLE_ITEMS[Math.floor(Math.random() * REQUESTABLE_ITEMS.length)];
         }
@@ -1127,10 +1082,8 @@ function updateAllMiiStats() {
             mii.happiness = Math.max(0, mii.happiness - 1);
         }
 
-        // Check for Game Over (Death)
         if (mii.happiness <= 0 && !mii.isDead) {
             mii.isDead = true;
-            // NEW: Unassign house on death
             unassignMiiFromHouse(mii);
 
             if (mii.id === miiList[currentMiiIndex]?.id) {
@@ -1138,7 +1091,6 @@ function updateAllMiiStats() {
             }
             logEvent(`💀 Death: ${mii.name} has passed away due to extreme sadness.`); 
 
-            // Partner grief: Break relationship and heavily penalize happiness
             if (mii.relationship.partnerId) {
                 const partner = miiList.find(m => m.id === mii.relationship.partnerId);
                 if (partner) {
@@ -1151,7 +1103,6 @@ function updateAllMiiStats() {
         }
     });
 
-    // 6. Handle Relationship Events (Arguments, Make-ups)
     handleRelationshipEvents(activeMiis);
 
     renderMoney();
@@ -1171,42 +1122,34 @@ function handleRelationshipEvents(activeMiis) {
             const partner = activeMiis.find(m => m.id === mii.relationship.partnerId);
             if (!partner) return;
 
-            // Argument Check
             if (Math.random() < ARGUE_CHANCE) {
                 mii.happiness = Math.max(0, mii.happiness - ARGUE_HAPPINESS_LOSS);
                 partner.happiness = Math.max(0, partner.happiness - ARGUE_HAPPINESS_LOSS);
                 logEvent(`💥 Argument: ${mii.name} and ${partner.name} had a huge fight!`);
             } 
             
-            // Make-up Check (only if happiness is low)
             else if ((mii.happiness < 50 || partner.happiness < 50) && Math.random() < MAKEUP_CHANCE) {
                 mii.happiness = Math.min(100, mii.happiness + MAKEUP_HAPPINESS_GAIN);
                 partner.happiness = Math.min(100, partner.happiness + MAKEUP_HAPPINESS_GAIN);
                 logEvent(`🤗 Make-up: ${mii.name} and ${partner.name} made up after a tough time!`);
             }
 
-            // Jealousy Check (only for dating/married couples who have friends)
             if (mii.relationship.friends.length > 0 && Math.random() < JEALOUSY_CHANCE) {
                 const friendId = mii.relationship.friends[Math.floor(Math.random() * mii.relationship.friends.length)];
                 if (friendId !== partner.id) {
-                     // Minor jealousy loss
                     partner.happiness = Math.max(0, partner.happiness - JEALOUSY_HAPPINESS_LOSS);
                     logEvent(`😬 Jealousy: ${partner.name} got jealous of ${mii.name}'s relationship with a friend.`);
                 }
             }
         }
         
-        // Friend Arguments
         mii.relationship.friends.forEach(friendId => {
             const friend = activeMiis.find(m => m.id === friendId);
             if (friend && Math.random() < FRIEND_ARGUE_CHANCE) {
-                // Ensure they are friends, not just acquaintances or partners
                 if (friend.relationship.friends.includes(mii.id)) {
-                    // Argument happens
                     mii.happiness = Math.max(0, mii.happiness - FRIEND_ARGUE_LOSS);
                     friend.happiness = Math.max(0, friend.happiness - FRIEND_ARGUE_LOSS);
                     
-                    // Break friendship
                     mii.relationship.friends = mii.relationship.friends.filter(id => id !== friendId);
                     friend.relationship.friends = friend.relationship.friends.filter(id => id !== mii.id);
 
@@ -1218,53 +1161,128 @@ function handleRelationshipEvents(activeMiis) {
     });
 }
 
+// --- UPDATED CARETAKER SYSTEM ---
+
 function handleCaretaker(activeMiis) {
+    let summary = { fed: 0, entertained: 0, slept: 0, woke: 0, jobs: 0 };
+    
+    // 1. GLOBAL CHECKS (Housing)
+    const homelessMiis = activeMiis.filter(m => !m.houseId);
+    // Only build if we have a healthy buffer (Cost + 200) so we don't starve existing Miis
+    if (homelessMiis.length > 0 && gameData.money >= (HOUSE_COST + 200)) {
+        buildHouse(); // This logs its own major event, which is fine
+    }
+
     activeMiis.forEach(mii => {
         if (mii.isDead) return;
-        
-        // 1. Manage Requests
-        if (mii.currentRequest && gameData.inventory[mii.currentRequest] && mii.happiness < CARETAKER_THRESHOLD) {
-            useItem(mii.currentRequest, mii, true);
+
+        // 2. JOB ASSIGNMENT (Fix Unemployment)
+        if (mii.job === 'unemployed') {
+            mii.job = 'gardener';
+            summary.jobs++;
         }
-        
-        // 2. Manage Hunger
+
+        // 3. CRITICAL EMERGENCY (Stats < 25) - High Priority
+        if (mii.hunger < 25) {
+            if (caretakerObtainAndUse('sandwich', mii, true)) summary.fed++;
+        }
+        if (mii.happiness < 25) {
+             if (caretakerObtainAndUse('toy_car', mii, true)) summary.entertained++;
+        }
+
+        // 4. REQUEST FULFILLMENT
+        if (mii.currentRequest && mii.happiness < 80) {
+            const type = ITEMS[mii.currentRequest].type;
+            if (caretakerObtainAndUse(mii.currentRequest, mii, true)) {
+                if (type === 'food') summary.fed++;
+                else summary.entertained++;
+            }
+        }
+
+        // 5. STANDARD MAINTENANCE (Stats < Threshold)
         if (mii.hunger < CARETAKER_THRESHOLD) {
-            if (gameData.inventory[CARETAKER_FOOD]) {
-                useItem(CARETAKER_FOOD, mii, true);
-            }
+            if (caretakerObtainAndUse(CARETAKER_FOOD, mii, true)) summary.fed++;
         }
-        
-        // 3. Manage Happiness (only if hunger is ok)
+
         if (mii.hunger > CARETAKER_THRESHOLD && mii.happiness < CARETAKER_THRESHOLD) {
-            if (gameData.inventory[CARETAKER_MOOD]) {
-                useItem(CARETAKER_MOOD, mii, true);
-            }
+             if (caretakerObtainAndUse(CARETAKER_MOOD, mii, true)) summary.entertained++;
         }
-        
-        // 4. Manage Sleep
-        if (mii.happiness < 40 && mii.hunger > 60 && !mii.isSleeping && Math.random() < 0.1) {
+
+        // 6. SLEEP MANAGEMENT
+        if (mii.happiness < 40 && mii.hunger > 50 && !mii.isSleeping && Math.random() < 0.2) {
             mii.isSleeping = true;
-            logEvent(`💤 Caretaker put ${mii.name} to sleep to rest.`);
+            summary.slept++;
+            updateSleepStateVisuals(mii);
         }
         
-        // 5. Manage Wake Up
-        if (mii.isSleeping && mii.happiness >= 90) {
+        if (mii.isSleeping && mii.happiness >= 95) {
             mii.isSleeping = false;
-            logEvent(`☀️ Caretaker woke ${mii.name} up after a good rest.`);
+            summary.woke++;
+            updateSleepStateVisuals(mii);
         }
     });
+
+    // Generate Grouped Log
+    let logParts = [];
+    if (summary.jobs > 0) logParts.push(`assigned ${summary.jobs} jobs`);
+    if (summary.fed > 0) logParts.push(`fed ${summary.fed} Miis`);
+    if (summary.entertained > 0) logParts.push(`entertained ${summary.entertained} Miis`);
+    if (summary.slept > 0) logParts.push(`put ${summary.slept} to bed`);
+    if (summary.woke > 0) logParts.push(`woke ${summary.woke} up`);
+
+    if (logParts.length > 0) {
+        logEvent(`🤖 Caretaker: ${logParts.join(', ')}.`);
+    }
+}
+
+function caretakerObtainAndUse(itemKey, mii, silent = false) {
+    const item = ITEMS[itemKey];
+    if (!item) return false;
+
+    // 1. Try Inventory
+    if (gameData.inventory[itemKey] && gameData.inventory[itemKey] > 0) {
+        useItem(itemKey, mii, true); // true = isCaretaker (bypasses hunger check warning)
+        return true;
+    }
+
+    // 2. Try Buying
+    if (gameData.money >= item.cost) {
+        gameData.money -= item.cost;
+        
+        // Apply Effects Manually to skip inventory step
+        if (item.type === 'food') {
+            let hungerGain = item.hunger;
+            if (gameData.facilities.restaurant) {
+                hungerGain = Math.round(hungerGain * FACILITY_BONUSES.restaurant.foodQuality);
+            }
+            mii.hunger = Math.min(100, mii.hunger + hungerGain);
+        }
+        
+        let happyBonus = item.happiness;
+        if (mii.currentRequest === itemKey) {
+            happyBonus += 20;
+            mii.currentRequest = null;
+        }
+        mii.happiness = Math.min(100, mii.happiness + happyBonus);
+
+        if (!silent) logEvent(`🤖 Caretaker bought and used ${item.name} on ${mii.name}.`);
+        
+        renderMoney(); 
+        renderCurrentMiiState();
+        return true;
+    }
+    
+    return false; // Could not afford or find item
 }
 
 function handleAutonomousActions(activeMiis) {
     activeMiis.forEach(mii => {
         if (mii.isDead || mii.isSleeping) return;
 
-        // Autonomous Work
         if (mii.job !== BASE_JOB && Math.random() < AUTOMATIC_WORK_CHANCE) {
             workForMoney(mii);
         }
 
-        // Autonomous Dating
         if (mii.relationship.status === 'single' && Math.random() < AUTOMATIC_DATING_CHANCE) {
             const potentialPartner = activeMiis.find(
                 m => m.id !== mii.id && 
@@ -1274,7 +1292,6 @@ function handleAutonomousActions(activeMiis) {
                      m.happiness > 50 
             );
             if (potentialPartner) {
-                // To keep the function DRY, we replicate the dating logic here slightly simpler
                 if (Math.random() < 0.5) { 
                     mii.relationship.status = 'dating';
                     mii.relationship.partnerId = potentialPartner.id;
@@ -1283,7 +1300,6 @@ function handleAutonomousActions(activeMiis) {
                     mii.happiness = Math.min(100, mii.happiness + DATING_HAPPINESS_BONUS);
                     potentialPartner.happiness = Math.min(100, potentialPartner.happiness + DATING_HAPPINESS_BONUS);
                     
-                    // NEW: Autonomous House Assignment
                     if (mii.houseId) {
                          unassignMiiFromHouse(potentialPartner);
                          assignMiiToHouse(potentialPartner);
@@ -1445,10 +1461,9 @@ function workForMoney(mii = miiList[currentMiiIndex]) {
     if (!job) return;
 
     const happinessBonus = mii.happiness / 100;
-    const hungerPenalty = (100 - mii.hunger) / 100 * 0.5; // Up to 50% penalty
+    const hungerPenalty = (100 - mii.hunger) / 100 * 0.5; 
     const basePay = job.basePay;
     
-    // Facility check: Restaurant increases food quality, which can be seen as a minor work bonus
     const restaurantBonus = gameData.facilities.restaurant ? 1.05 : 1;
     
     let actualPay = Math.round(basePay * happinessBonus * (1 - hungerPenalty) * restaurantBonus);
@@ -1516,14 +1531,13 @@ function useItem(key, mii = miiList[currentMiiIndex], isCaretaker = false) {
     
     if (mii.currentRequest === key) {
         mii.currentRequest = null;
-        mii.happiness = Math.min(100, mii.happiness + 20); // Extra happiness for request fulfillment
+        mii.happiness = Math.min(100, mii.happiness + 20); 
         logEvent(`${mii.name} is happy you gave them what they wanted!`);
     }
 
     if (item.type === 'food') {
         let hungerGain = item.hunger;
         
-        // Facility check: Restaurant increases the quality/effectiveness of food
         if (gameData.facilities.restaurant) {
             hungerGain = Math.round(hungerGain * FACILITY_BONUSES.restaurant.foodQuality);
         }
@@ -1532,7 +1546,6 @@ function useItem(key, mii = miiList[currentMiiIndex], isCaretaker = false) {
         logEvent(`${mii.name} ate a ${item.name.split(' ')[0]}. Hunger +${hungerGain}.`);
     }
 
-    // Happiness bonus always applies
     mii.happiness = Math.min(100, mii.happiness + item.happiness);
     logEvent(`${mii.name} is happier. Happiness +${item.happiness}.`);
     
@@ -1617,21 +1630,18 @@ function loadGame(savedData) {
             miiList = [];
         }
         
-        // Ensure new properties exist on old save files
         miiList = miiList.map(mii => ({
             ...mii,
             isDead: mii.isDead || false,
             relationship: mii.relationship || { status: 'single', partnerId: null, friends: [] },
             job: mii.job || BASE_JOB, 
-            houseId: mii.houseId === undefined ? null : mii.houseId // NEW: Add houseId property
+            houseId: mii.houseId === undefined ? null : mii.houseId 
         }));
         
-        // Ensure townEvents, houses, and facilities exist on old save files
         if (!gameData.townEvents) gameData.townEvents = [];
         if (!gameData.houses) gameData.houses = [];
         if (!gameData.facilities) gameData.facilities = {};
         
-        // If loading a very old save without houses, add the initial house
         if (gameData.houses.length === 0) {
             gameData.houses.push({ id: 1, occupants: [] });
             logEvent("New Town Log initialized, added starting House 1!");
@@ -1683,7 +1693,7 @@ window.addEventListener('click', function(event) {
     if (event.target === jobModal && !jobModal.classList.contains('hidden')) { 
         closeJobModal();
     }
-    if (event.target === buildModal && !buildModal.classList.contains('hidden')) { // NEW
+    if (event.target === buildModal && !buildModal.classList.contains('hidden')) { 
         closeBuildModal();
     }
 });
@@ -1705,12 +1715,10 @@ document.addEventListener('keydown', function(event) {
         else if (!jobModal.classList.contains('hidden')) { 
             closeJobModal();
         }
-        else if (!buildModal.classList.contains('hidden')) { // NEW
+        else if (!buildModal.classList.contains('hidden')) { 
             closeBuildModal();
         }
     }
 });
 
-
-// Start the whole process when the script loads
 initGame();
