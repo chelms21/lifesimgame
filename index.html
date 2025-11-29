@@ -56,9 +56,12 @@
             
             <div class="town-status-bar">
                 <p>💰 Money: <span id="money-stat">0</span></p>
-                <button onclick="workForMoney()">💼 Work (Job Pay)</button>
+                <button onclick="workForMoney()">💼 Work (+$10)</button>
                 <button onclick="openInvestmentModal()">📈 Invest</button>
-                <button onclick="openBankModal()">🏦 Bank Savings</button>  <button onclick="throwParty()" id="party-button">🎉 Throw Party (💰150)</button> </div>
+                <button onclick="openBankModal()">🏦 Bank Savings</button>
+                <button onclick="throwParty()" id="party-button">🎉 Throw Party (💰150)</button>
+                <button onclick="openBuildModal()">🏗️ Build Town</button>
+            </div>
             
             <div class="management-status">
                 <p>Caretaker Status: 
@@ -70,6 +73,11 @@
                 <h3>Town Residents</h3>
                 <div id="resident-list" class="resident-grid">
                     </div>
+            </div>
+
+            <div class="mii-selector">
+                <label for="mii-select">Select Mii to Interact:</label>
+                <select id="mii-select" onchange="switchMii()"></select>
             </div>
 
             <div class="mii-card">
@@ -89,55 +97,52 @@
                 <div class="stats">
                     <p>Gender: <span id="gender-stat"></span></p>
                     <p>Personality: <span id="personality-stat"></span></p>
-                    <p>Job: <span id="job-stat"></span></p> <p>Relationship: <span id="relationship-stat">Single</span></p> 
+                    <p>Relationship: <span id="relationship-stat">Single</span></p> 
+                    <p>Job: <span id="job-stat" onclick="openJobModal()" style="cursor: pointer;"></span></p> 
+                    <p>Housing: <span id="housing-stat"></span></p> 
                     
                     <p>❤️ Happiness: <span id="happiness-stat"></span></p>
-                    <div class="bar-container"><div id="happiness-bar" class="stat-bar"></div></div>
+                    <div class="bar-container"><div id="happiness-bar" class="stat-bar happy"></div></div>
                     
                     <p>🍔 Hunger: <span id="hunger-stat"></span></p>
-                    <div class="bar-container"><div id="hunger-bar" class="stat-bar"></div></div>
+                    <div class="bar-container"><div id="hunger-bar" class="stat-bar full"></div></div>
                 </div>
-                
-                <p id="mii-message" class="message"></p>
-                
-                <div class="mii-actions">
-                    <button onclick="openRelationshipModal()">👥 Relationships</button>
-                    <button onclick="openJobModal()">💼 Job Management</button> <button onclick="openStore()">🛒 Maple Store</button>
-                    <button onclick="toggleSleep()" id="sleep-button">🛌 Go to Sleep</button>
-                </div>
-                
-                <div class="inventory-area">
-                    <h4>Mii Inventory</h4>
-                    <div id="inventory-list" class="inventory-grid">
-                        </div>
+
+                <div class="message-box">
+                    <p id="mii-message"></p>
                 </div>
             </div>
 
-            <div id="town-events" class="town-events-area">
-                <h3>Town Events Log</h3>
-                <div id="event-log-container">
-                    <p class="event-message">No events yet. Start the town!</p>
-                </div>
-            </div>
-            <div class="mii-selector">
-                <label for="mii-select">Select Mii to Interact:</label>
-                <select id="mii-select" onchange="switchMii()"></select>
-                <button onclick="openNewMiiCreation()">+ Add New Mii</button>
+            <div class="actions">
+                <button onclick="openStore()">🛒 Maple Store</button>
+                <button onclick="openRelationshipModal()" id="relationship-button">❤️ Interact / Date</button>
+                <button onclick="toggleSleep()" id="sleep-button">🛌 Go to Sleep</button>
+                <button onclick="openNewMiiCreation()">➕ New Resident</button>
+                <a href="tutorial.txt" target="_blank" class="button-link"><button>📘 Tutorial</button></a>
             </div>
             
+            <div class="inventory-area">
+                <h3>🎒 Inventory (Click to use on selected Mii)</h3>
+                <div id="inventory-list" class="inventory-grid">
+                    </div>
+            </div>
+
             <div class="save-area">
-                <p id="save-message">Welcome to Maple Island!</p>
                 <button onclick="saveGame()">💾 Save Game</button>
-                <button onclick="resetGame()">🛑 Reset Town</button>
+                <button onclick="resetGame()">🗑️ Reset Game</button>
+                <p id="save-message" class="message-box"></p>
+                
+                <div id="event-log-container" class="event-log">
+                    <h3>Town Log (Last 5 Events)</h3>
+                    </div>
             </div>
         </div>
-
+        
         <div id="store-modal" class="modal hidden">
             <div class="modal-content">
                 <h2>🛒 Maple Store</h2>
-                <p>Town Money: 💰<span id="store-money">0</span></p>
-                
-                <div id="store-items" class="inventory-grid">
+                <p>Current Money: <span id="store-money">0</span></p>
+                <div id="store-items" class="store-grid">
                     </div>
                 <button onclick="closeStore()">Close Store</button>
             </div>
@@ -145,29 +150,33 @@
 
         <div id="bank-modal" class="modal hidden">
             <div class="modal-content">
-                <h2>🏦 Town Bank Savings</h2>
-                <p>Current Town Money: 💰<span id="bank-current-money">0</span></p>
-                <p>Savings Total: 💰<span id="savings-total">0</span></p>
-                <p class="small-note">Savings earn 1% interest per tick.</p>
+                <h2>🏦 Maple Town Bank</h2>
+                <p>Current Money: 💰<span id="bank-current-money">0</span></p>
                 <hr>
-                
+                <h3>Savings Account</h3>
+                <p>Current Savings: 💰<span id="savings-total">0</span></p>
+                <p>Interest Rate: **1% per tick** (Guaranteed Growth)</p>
+
                 <label for="savings-deposit-amount">Amount to Deposit:</label>
                 <input type="number" id="savings-deposit-amount" min="10" placeholder="Min 10 Gold">
                 <button onclick="depositSavings()">Deposit</button>
+                
                 <hr>
+                
                 <label for="savings-withdraw-amount">Amount to Withdraw:</label>
                 <input type="number" id="savings-withdraw-amount" min="10" placeholder="Min 10 Gold">
                 <button onclick="withdrawSavings()">Withdraw</button>
+                
                 <button onclick="closeBankModal()">Close Bank</button>
             </div>
         </div>
-
+        
         <div id="new-mii-modal" class="modal hidden">
             <div class="modal-content">
                 <h2>Create New Resident</h2>
                 <label for="new-mii-name-input">Mii Name:</label>
-                <input type="text" id="new-mii-name-input" placeholder="e.g., Tom, Amy, Bob" maxlength="15">
-            
+                <input type="text" id="new-mii-name-input" placeholder="e.g., Jane, Alex" maxlength="15">
+                
                 <label for="new-mii-gender-select">Gender:</label>
                 <select id="new-mii-gender-select">
                     <option value="male">Male ♂️</option>
@@ -181,7 +190,6 @@
                     <option value="laid-back">Laid-back</option>
                     <option value="stubborn">Stubborn</option>
                 </select>
-
                 <button onclick="addNewMii()">Add to Town</button>
                 <button onclick="closeNewMiiModal()">Cancel</button>
             </div>
@@ -190,7 +198,7 @@
         <div id="investment-modal" class="modal hidden">
             <div class="modal-content">
                 <h2>📈 Town Investment Fund</h2>
-                <p>Current Funds: 💰<span id="investment-total">0</span></p>
+                <p>Current Money: 💰<span id="investment-money">0</span></p> <p>Current Funds: 💰<span id="investment-total">0</span></p>
                 <p>Passive Income: 💰<span id="investment-rate">0</span>/tick</p>
 
                 <label for="investment-amount">Amount to Invest:</label>
@@ -220,13 +228,38 @@
         
         <div id="job-modal" class="modal hidden">
             <div class="modal-content">
-                <h2 id="job-mii-name">Job Assignment</h2>
+                <h2>💼 Career Center</h2>
+                <h3 id="job-mii-name"></h3>
                 <p>Current Job: <span id="job-current-job"></span></p>
                 <hr>
-                <h3>Available Jobs:</h3>
-                <div id="job-list" class="inventory-grid">
+                
+                <h3>Available Careers (Click to Apply)</h3>
+                <div id="job-list" class="store-grid">
                     </div>
+
                 <button onclick="closeJobModal()">Close</button>
+            </div>
+        </div>
+
+        <div id="build-modal" class="modal hidden">
+            <div class="modal-content">
+                <h2>🏗️ Town Building Management</h2>
+                <p>Current Money: 💰<span id="build-money">0</span></p>
+                <hr>
+
+                <h3>Houses / Apartments</h3>
+                <p>Total Houses: <span id="house-capacity">0 houses (0 slots)</span></p>
+                <p>Residents Housed: <span id="mii-count-housing">0</span></p>
+                <p class="warning-text">Homeless Miis: <span id="homeless-count">0</span> (Cost: 💰300 per house)</p>
+                <button onclick="buildHouse()">Build New House (💰300)</button>
+                
+                <hr>
+
+                <h3>Town Facilities</h3>
+                <div id="facility-list" class="store-grid">
+                    </div>
+
+                <button onclick="closeBuildModal()">Close</button>
             </div>
         </div>
 

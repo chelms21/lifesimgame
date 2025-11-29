@@ -1,0 +1,88 @@
+======================================
+Mii Town Simulator - Player's Guide
+======================================
+
+Welcome to Mii Town on Maple Island! Your role is the Caretaker, managing the lives, finances, and infrastructure of your Mii residents.
+
+--------------------------------------
+I. STARTING THE GAME
+--------------------------------------
+1. Create Your First Mii: Give your Mii a name, gender, and personality.
+2. Choose Mode & Difficulty:
+   - Manual ✋: You must manage everything (feeding, finding jobs, relationships).
+   - Automatic 🤖: Miis will attempt to act autonomously (work, date), but still need help.
+   - Easy 😎: Starts with extra money and the Caretaker unlocked.
+3. Start Town Life: Once you have at least one Mii, click to begin the simulation.
+
+--------------------------------------
+II. CORE MII STATS
+--------------------------------------
+The well-being of your Miis is essential. Stats decay over time.
+
+- ❤️ Happiness (0-100): Decreases when hungry, homeless, or rejected. Increases with activities, relationships, and items. If it hits 0, the Mii passes away.
+- 🍔 Hunger (0-100): Decreases constantly. Increases by using 'food' items from the Inventory.
+- Status: Watch the Mii's message box and avatar for visual cues (sad, starving, sleeping).
+- Sleep 🛌: Use the 'Go to Sleep' button when a Mii is low on happiness but not hungry. Sleeping Miis regenerate happiness faster and have slower hunger decay.
+
+--------------------------------------
+III. TOWN INFRASTRUCTURE (Build Town 🏗️)
+--------------------------------------
+Use the "Build Town" button to expand your town.
+
+A. HOUSING (Apartments)
+   - Status: Check the "Housing" stat on the Mii card. Miis with "⚠️ Homeless" suffer a significant happiness decay penalty.
+   - Houses: Each House/Apartment costs 💰300 and can hold a maximum of 2 residents. Build more to house all your residents and partners!
+
+B. FACILITIES
+   - Park 🌳 (Cost: 💰500): Provides a small, permanent happiness decay bonus for all residents.
+   - Restaurant 🍽️ (Cost: 💰1000): Increases the quality/effectiveness of all food items used by Miis.
+
+--------------------------------------
+IV. TOWN ACTIONS
+--------------------------------------
+- Work 💼: The selected Mii works for money. Pay is based on their Job and modified by their current Happiness/Hunger.
+- Throw Party 🎉 (Cost: 💰150): Gives a large happiness boost to ALL active Miis.
+- Build Town 🏗️: Manage and build new houses and town facilities (see III.)
+
+--------------------------------------
+V. JOBS & CAREER (Click the Job Stat)
+--------------------------------------
+- Job Icon 💻: Click the Job status on the Mii card to open the Job Modal and assign a new career.
+- Base Pay: Every job (except Unemployed) earns gold per hour worked.
+- Unemployed 🛌: Default job. Miis decay happiness faster when unemployed.
+
+Job Tiers (Pay per hour):
+- Unemployed: 💰5
+- Gardener: 💰15
+- Cashier: 💰25
+- Chef: 💰40
+- Software Dev: 💰60
+
+--------------------------------------
+VI. RELATIONSHIPS (❤️ Interact / Date)
+--------------------------------------
+- Dating/Marriage: Miis of opposite genders can date/marry if both are single.
+- Happiness Bonus: Dating (Minor), Spouse (Significant). Couples will try to live together if space is available.
+- Friendships 🤝: Can be formed between any Miis. Successful friendships grant a small happiness boost.
+- Dynamics: Miis can argue, get jealous, or break up autonomously.
+
+--------------------------------------
+VII. FINANCIAL SYSTEMS
+--------------------------------------
+
+A. Inventory & Store 🛒
+- Items: Divided into 'food' (for Hunger) and 'mood' (for Happiness).
+- Requests: If a Mii wants a specific item, fulfilling the request grants an extra happiness bonus.
+- Inventory: Click an item to use it on the currently selected Mii.
+
+B. Investment 📈
+- Investment Fund: Deposit money to passively earn 💰1 per game tick for every 💰100 total invested.
+
+C. Bank Savings 🏦
+- Savings Account: Deposit money here to earn a guaranteed 1% interest per game tick.
+
+--------------------------------------
+VIII. CARETAKER SYSTEM
+--------------------------------------
+- Status: Can be unlocked for 💰500 (or enabled in Easy Mode).
+- Function: The Caretaker autonomously manages Miis that are below a threshold (Happiness < 40, Hunger < 40) by feeding them, boosting their mood, fulfilling requests, and managing their sleep.
