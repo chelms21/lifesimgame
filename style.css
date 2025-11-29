@@ -126,22 +126,6 @@ h1 {
     box-shadow: 0 0 10px rgba(255, 105, 180, 0.5);
 }
 
-.resident-mini-card h5 {
-    margin: 2px 0;
-    font-weight: bold;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.resident-mini-card p {
-    margin: 1px 0;
-}
-
-.resident-mini-card .status-icon {
-    font-size: 1.1em;
-}
-
 .resident-mini-card.sad {
     background-color: #ffcccc; /* Light red */
 }
@@ -257,93 +241,113 @@ h1 {
 .mii-avatar.sleeping .eyes::before, .mii-avatar.sleeping .eyes::after {
     height: 2px; 
     border-radius: 0;
-    transform: translateY(5px);
+    background-color: #333;
 }
-
 
 .mouth {
     position: absolute;
-    width: 40%;
-    height: 10px;
-    background-color: #333;
-    border-radius: 0 0 50% 50%;
-    bottom: 5%;
-    left: 30%;
+    width: 50%;
+    height: 15px;
+    top: 60%;
+    left: 25%;
+    border-radius: 50%;
+    border: 2px solid #333;
+    border-top: none;
+    border-left: none;
+    border-right: none;
 }
 
-.mii-avatar.sad .mouth {
-    border-radius: 50% 50% 0 0;
-    transform: rotate(180deg); 
-}
-
-/* --- Stats and Bars --- */
+/* Mii Card Stats & Message */
 .stats {
     text-align: left;
     margin-bottom: 15px;
 }
 
-.bar-container {
-    width: 100%;
-    background-color: #eee;
-    border-radius: 5px;
-    height: 15px;
-    margin: 5px 0 10px;
-    overflow: hidden;
+.stats p {
+    margin: 5px 0 0;
+    font-weight: bold;
 }
 
-.stat-bar {
-    height: 100%;
-    width: 100%; 
-    transition: width 0.5s ease-out;
-    border-radius: 5px;
-}
-
-#happiness-bar {
-    background-color: #4CAF50; /* Green */
-}
-#happiness-bar.low {
-    background-color: #f44336; /* Red */
-}
-
-#hunger-bar {
-    background-color: #ff9800; /* Orange */
-}
-#hunger-bar.low {
-    background-color: #f44336; /* Red */
-}
-
-.message-box {
-    background-color: #f3f3f3;
-    padding: 10px;
-    border-radius: 8px;
-    border: 1px solid #ddd;
-    min-height: 20px;
+.message {
     font-style: italic;
     color: #555;
     margin-bottom: 15px;
+    padding: 5px;
+    border: 1px dashed #ccc;
+    border-radius: 5px;
+    min-height: 20px;
+}
+
+.stat-bar {
+    height: 10px;
+    background-color: #4CAF50;
+    border-radius: 5px;
+    transition: width 0.5s;
+}
+
+.bar-container {
+    background-color: #e0e0e0;
+    border-radius: 5px;
+    margin: 2px 0 15px;
+}
+
+/* Low stats (Red bars) */
+#happiness-bar.low {
+    background-color: #f44336;
+}
+#hunger-bar.low {
+    background-color: #f44336;
 }
 
 
-/* --- Actions --- */
-.actions button {
-    background-color: #ff69b4;
-    color: white;
-    padding: 10px;
+/* --- Mii Actions --- */
+.mii-actions {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 15px;
+    flex-wrap: wrap; /* To fit all buttons on smaller screens */
+    gap: 5px;
+}
+
+.mii-actions button {
+    padding: 8px 10px;
     border: none;
     border-radius: 5px;
+    font-weight: bold;
     cursor: pointer;
-    font-size: 0.9em;
-    margin: 5px;
     transition: background-color 0.2s;
+    flex-basis: 48%; /* Allows two buttons per row */
 }
 
-.actions button:hover {
-    background-color: #ff98c8;
+.mii-actions button:nth-child(1) { /* Relationships */
+    background-color: #9370db; /* Medium Purple */
+    color: white;
+}
+.mii-actions button:nth-child(1):hover {
+    background-color: #7d5baf;
 }
 
-#sleep-button {
-    background-color: #ff69b4; 
+.mii-actions button:nth-child(2) { /* Job Management (NEW) */
+    background-color: #4682b4; /* Steel Blue */
+    color: white;
 }
+.mii-actions button:nth-child(2):hover {
+    background-color: #386794;
+}
+
+.mii-actions button:nth-child(3) { /* Store (Moved to 3rd position) */
+    background-color: #f0e68c; /* Khaki */
+    color: #333;
+}
+.mii-actions button:nth-child(3):hover {
+    background-color: #e0d67c;
+}
+
+#sleep-button { /* Sleep (4th position) */
+    background-color: #ff69b4;
+    color: white;
+}
+
 #sleep-button:hover {
     background-color: #ff98c8;
 }
@@ -376,6 +380,17 @@ h1 {
     background-color: #e0f0ff;
 }
 
+/* NEW: Highlight for current job in Job Modal */
+.item-slot.selected-job {
+    border: 2px solid #008000; /* Green highlight for current job */
+    background-color: #e6ffe6;
+    box-shadow: 0 0 5px rgba(0, 128, 0, 0.5);
+    cursor: default;
+}
+.item-slot.selected-job:hover {
+    background-color: #e6ffe6; /* Prevent color change on hover for current job */
+}
+
 .item-slot h4 {
     margin: 0 0 5px;
     font-size: 0.9em;
@@ -394,7 +409,6 @@ h1 {
     top: 0;
     width: 100%;
     height: 100%;
-    overflow: auto;
     background-color: rgba(0, 0, 0, 0.4);
     display: flex;
     justify-content: center;
@@ -402,44 +416,44 @@ h1 {
 }
 
 .modal-content {
-    background-color: #fefefe;
+    background-color: #ffffff;
     padding: 20px;
     border-radius: 10px;
-    border: 1px solid #888;
-    width: 80%;
-    max-width: 300px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
     text-align: center;
+    max-width: 80%;
+    min-width: 280px;
 }
 
-/* Store & Investment Specifics */
-.store-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    justify-content: center;
-    margin-bottom: 15px;
+.modal-content h2 {
+    color: #ff69b4;
+    margin-top: 0;
 }
 
-.store-item {
+.modal-content button {
+    margin: 5px;
+    padding: 8px 15px;
+    background-color: #ff69b4;
+    color: white;
+    border: none;
+    border-radius: 5px;
     cursor: pointer;
-    border: 2px solid #a0d8f0;
 }
 
-.store-item:hover {
-    background-color: #d0f0ff;
+.modal-content button:hover {
+    background-color: #ff98c8;
 }
 
-#store-money {
+.modal-content label {
+    display: block;
+    margin: 10px 0 5px;
     font-weight: bold;
-    color: #008000;
 }
 
-/* New Mii Creation/Investment Inputs */
-#new-mii-modal input, #new-mii-modal select, 
-#investment-modal input, #investment-modal select {
-    width: 90%;
-    padding: 8px;
-    margin: 5px 0 15px;
+.modal-content input, .modal-content select {
+    width: calc(100% - 20px);
+    padding: 10px;
+    margin-bottom: 10px;
     border-radius: 5px;
     border: 1px solid #ccc;
     box-sizing: border-box;
@@ -495,31 +509,74 @@ h1 {
     cursor: pointer;
     font-size: 0.9em;
     margin: 5px;
-    width: 90%;
 }
+
 #rel-actions button.propose {
-    background-color: #f44336; /* Red for proposal */
+    background-color: #5cb85c; /* Green for proposal */
+}
+
+#rel-actions button.propose:hover {
+    background-color: #4cae4c;
+}
+
+#rel-actions button:hover {
+    background-color: #e58800;
 }
 
 #rel-friendship-list {
-    margin-top: 20px;
-    padding-top: 10px;
-    border-top: 1px solid #ccc;
     text-align: left;
+    margin-top: 15px;
+    border-top: 1px dashed #ccc;
+    padding-top: 10px;
 }
 
 #rel-friends-ul {
-    list-style-type: none;
+    list-style: none;
     padding: 0;
 }
 
 #rel-friends-ul li {
-    background-color: #fff0f5;
-    margin: 5px 0;
-    padding: 5px 10px;
+    background-color: #f0f0f0;
+    padding: 5px;
+    margin-bottom: 5px;
+    border-radius: 3px;
+    font-size: 0.9em;
+}
+
+/* --- Town Events Area (NEW) --- */
+.town-events-area {
+    margin-top: 15px;
+    padding: 10px;
+    border: 1px solid #ff69b4;
+    border-radius: 10px;
+    background-color: #fff0f5; /* Light pink background */
+    text-align: left;
+}
+
+#event-log-container {
+    height: 120px; /* Fixed height to only show a few recent events */
+    overflow: hidden; /* PREVENTS SCROLLING */
+    padding: 5px;
+    background-color: #ffffff;
     border-radius: 5px;
-    border-left: 3px solid #ff69b4;
+    border: 1px solid #e0e0e0;
+    
+    /* Display the newest events at the bottom (most recent first) */
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column-reverse; /* SHOWS MOST RECENT AT BOTTOM */
+    justify-content: flex-start; 
+}
+
+.event-message {
+    font-size: 0.9em;
+    margin: 2px 0;
+    padding: 2px 0;
+    border-bottom: 1px dotted #ccc;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; /* Keeps event lines neat in the fixed space */
+}
+
+.event-message:last-child {
+    border-bottom: none;
 }
