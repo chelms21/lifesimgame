@@ -329,6 +329,7 @@ function initGame() {
         logEvent(`The town started with one apartment building (House 1)!`);
         showCreationScreen();
     }
+    createFallingElement()
 }
 
 function showCreationScreen() {
@@ -1617,6 +1618,58 @@ function renderStore() {
     }
 }
 
+const FALLING_CONTAINER = document.getElementById('falling-elements-container');
+
+/**
+ * Creates a single falling image element with random properties.
+ */
+function createFallingElement() {
+    // 1. Create the image element
+    const element = document.createElement('img');
+    element.src = 'images/vexel.png'; // <-- CHANGE THIS TO YOUR IMAGE PATH
+    element.classList.add('falling-image');
+
+    // 2. Set random position, size, and animation time
+    const viewportWidth = window.innerWidth;
+    
+    // Random horizontal starting position (0% to 100% of the screen)
+    const startX = Math.random() * viewportWidth; 
+    element.style.left = `${startX}px`;
+
+    // Random size (e.g., between 15px and 35px)
+    const size = Math.random() * 20 + 15; 
+    element.style.width = `${size}px`;
+    element.style.height = `${size}px`;
+    
+    // Random duration (slower/faster fall between 10s and 25s)
+    const duration = Math.random() * 15 + 10;
+    element.style.animationDuration = `${duration}s`;
+    
+    // Random delay (stagger the start so they aren't all in sync)
+    const delay = Math.random() * -10; // Use a negative delay to start them off-screen immediately
+    element.style.animationDelay = `${delay}s`;
+
+    // 3. Add to the container
+    FALLING_CONTAINER.appendChild(element);
+
+    // 4. Clean up: Remove element after its animation cycle finishes
+    setTimeout(() => {
+        element.remove();
+    }, duration * 1000); // Wait for the full duration of the animation
+}
+
+/**
+ * Starts the continuous generation of falling elements.
+ */
+function startFallingEffect() {
+    // Generate a new element every 100 to 400 milliseconds
+    setInterval(createFallingElement, 300); 
+
+    // Generate an initial burst of elements to fill the screen quickly
+    for (let i = 0; i < 50; i++) {
+        setTimeout(createFallingElement, i * 100);
+    }
+}
 
 // --- Save/Load System ---
 
