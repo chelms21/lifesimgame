@@ -614,3 +614,30 @@ h2 {
     padding: 3px 0;
     border-bottom: 1px dotted #eee;
 }
+
+/* New layout to place images on sides of the main game container */
+.game-layout {
+    display: flex;
+    align-items: center; /* Vertically centers the image elements with the game container */
+    gap: 40px; /* Adds space between the side images and the main container */
+}
+
+/* Style for the side image containers */
+.side-image {
+    width: 150px; /* Set a specific width for the image column */
+    /* Use flex: 0 0 auto; if you want the main container to not affect its width */
+}
+
+/* Style for the images themselves */
+.side-image img {
+    max-width: 100%; /* Ensures the image fits within the side-image container */
+    height: auto;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    /* Optional: Use filter for a subtle effect */
+    opacity: 0.8; 
+}
+
+.side-image img:hover {
+    opacity: 1; 
+}
