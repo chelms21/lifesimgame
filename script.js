@@ -329,7 +329,7 @@ function initGame() {
         logEvent(`The town started with one apartment building (House 1)!`);
         showCreationScreen();
     }
-    createFallingElement()
+    startFallingEffect()
 }
 
 function showCreationScreen() {
