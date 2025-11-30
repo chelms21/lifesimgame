@@ -55,7 +55,13 @@ const JOBS = {
     'gardener': { name: 'Gardener', basePay: 15, icon: '🌿' },
     'cashier': { name: 'Cashier', basePay: 25, icon: '🛒' },
     'chef': { name: 'Chef', basePay: 40, icon: '🧑‍🍳' },
-    'software_dev': { name: 'Software Dev', basePay: 60, icon: '💻' }
+    'software_dev': { name: 'Software Dev', basePay: 60, icon: '💻' },
+    'dog_walker': { name: 'Dog Walker', basePay: 10, icon: '🐕' },
+    'tutor': { name: 'Student Tutor', basePay: 30, icon: '🧠' },
+    'electrician': { name: 'Electrician', basePay: 50, icon: '💡' },
+    'artist': { name: 'Digital Artist', basePay: 70, icon: '🎨' },
+    'pilot': { name: 'Airline Pilot', basePay: 90, icon: '✈️' },
+    'surgeon': { name: 'Surgeon', basePay: 120, icon: '🩺' }
 };
 const BASE_JOB = 'unemployed'; 
 
