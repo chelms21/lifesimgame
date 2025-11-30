@@ -79,7 +79,7 @@ const FRIEND_ARGUE_CHANCE = 0.01;
 const FRIEND_ARGUE_LOSS = 15;
 
 // --- Investment Constants ---
-const INVESTMENT_RATE = 100; 
+const INVESTMENT_RATE = 50; 
 const INVESTMENT_MIN = 10;
 
 // --- Item Definitions ---
