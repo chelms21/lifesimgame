@@ -92,21 +92,21 @@ const INVESTMENT_MIN = 10;
 const ITEMS = {
     'apple': { name: 'Apple 🍎', type: 'food', cost: 10, hunger: 20, happiness: 5 },
     'sandwich': { name: 'Sandwich 🥪', type: 'food', cost: 30, hunger: 40, happiness: 10 },
-    'steak': { name: 'Gourmet Steak 🥩', type: 'food', cost: 100, hunger: 90, happiness: 20 },
+    'steak': { name: 'Gourmet-Steak 🥩', type: 'food', cost: 100, hunger: 90, happiness: 20 },
     'coffee': { name: 'Coffee ☕', type: 'mood', cost: 15, happiness: 20 },
-    'toy_car': { name: 'Toy Car 🚗', type: 'mood', cost: 50, happiness: 40 },
+    'toy_car': { name: 'Toy-Car 🚗', type: 'mood', cost: 50, happiness: 40 },
     'cookie': { name: 'Cookie 🍪', type: 'food', cost: 5, hunger: 10, happiness: 15 },
-    'pizza': { name: 'Pizza Slice 🍕', type: 'food', cost: 50, hunger: 60, happiness: 15 },
-    'sushi': { name: 'Sushi Set 🍣', type: 'food', cost: 75, hunger: 50, happiness: 35 },
-    'book': { name: 'Adventure Book 📚', type: 'mood', cost: 25, happiness: 30 },
+    'pizza': { name: 'Pizza-Slice 🍕', type: 'food', cost: 50, hunger: 60, happiness: 15 },
+    'sushi': { name: 'Sushi-Set 🍣', type: 'food', cost: 75, hunger: 50, happiness: 35 },
+    'book': { name: 'Adventure-Book 📚', type: 'mood', cost: 25, happiness: 30 },
     'headphones': { name: 'Headphones 🎧', type: 'mood', cost: 80, happiness: 60 },
-    'flower': { name: 'Small Flower Pot 🪴', type: 'mood', cost: 10, happiness: 10 },
-    'salad': { name: 'Healthy Salad 🥗', type: 'food', cost: 40, hunger: 30, happiness: 5 },
-    'energy_drink': { name: 'Energy Drink ⚡', type: 'food', cost: 20, hunger: 10, happiness: 25 },
+    'flower': { name: 'Small-Flower-Pot 🪴', type: 'mood', cost: 10, happiness: 10 },
+    'salad': { name: 'Healthy-Salad 🥗', type: 'food', cost: 40, hunger: 30, happiness: 5 },
+    'energy_drink': { name: 'Energy-Drink ⚡', type: 'food', cost: 20, hunger: 10, happiness: 25 },
     'burger': { name: 'Cheeseburger 🍔', type: 'food', cost: 65, hunger: 75, happiness: 18 },
-    'board_game': { name: 'Board Game ♟️', type: 'mood', cost: 120, happiness: 80 },
-    'poster': { name: 'Cool Poster 🖼️', type: 'mood', cost: 35, happiness: 25 },
-    'pet_rock': { name: 'Pet Rock 🪨', type: 'mood', cost: 2, happiness: 3 }
+    'board_game': { name: 'Board-Game ♟️', type: 'mood', cost: 120, happiness: 80 },
+    'poster': { name: 'Cool-Poster 🖼️', type: 'mood', cost: 35, happiness: 25 },
+    'pet_rock': { name: 'Pet-Rock 🪨', type: 'mood', cost: 2, happiness: 3 }
 };
 const REQUESTABLE_ITEMS = ['apple', 'sandwich', 'coffee']; 
 
