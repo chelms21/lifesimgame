@@ -8,10 +8,10 @@
 </head>
 <body>
     <div class="container">
-        <h1>🏘️ Mii Town on Maple Island 🏘️</h1>
+        <h1>🏘️ Vexel Village on Maple Island 🏘️</h1>
         
         <div id="creation-screen" class="screen">
-            <h2>Start Your Town</h2>
+            <h2>Start Your Village</h2>
             
             <label for="game-mode-select">Game Mode:</label>
             <select id="game-mode-select">
@@ -27,9 +27,9 @@
             
             <hr>
 
-            <h2>Create Your First Mii</h2>
-            <p>You need at least one Mii to start your town.</p>
-            <label for="mii-name-input">Mii Name:</label>
+            <h2>Create Your First Vexel</h2>
+            <p>You need at least one Vexel to start your town.</p>
+            <label for="mii-name-input">Vexel Name:</label>
             <input type="text" id="mii-name-input" placeholder="e.g., Tom, Amy, Bob" maxlength="15">
             
             <label for="mii-gender-select">Gender:</label>
@@ -46,10 +46,10 @@
                 <option value="stubborn">Stubborn</option>
             </select>
             
-            <button onclick="addMiiToTown()">Add Mii to Town</button>
+            <button onclick="addMiiToTown()">Add Vexel to Village</button>
             <hr>
             <p>Current Residents: <span id="resident-count">0</span></p>
-            <button onclick="startGame()" id="start-town-button" disabled>Start Town Life (Requires 1+ Mii)</button>
+            <button onclick="startGame()" id="start-town-button" disabled>Start Village Life (Requires 1+ Vexel)</button>
         </div>
 
         <div id="game-screen" class="screen hidden">
@@ -76,7 +76,7 @@
             </div>
 
             <div class="mii-selector">
-                <label for="mii-select">Select Mii to Interact:</label>
+                <label for="mii-select">Select Vexel to Interact:</label>
                 <select id="mii-select" onchange="switchMii()"></select>
             </div>
 
@@ -122,7 +122,7 @@
             </div>
             
             <div class="inventory-area">
-                <h3>🎒 Inventory (Click to use on selected Mii)</h3>
+                <h3>🎒 Inventory (Click to use on selected Vexel)</h3>
                 <div id="inventory-list" class="inventory-grid">
                     </div>
             </div>
@@ -133,7 +133,7 @@
                 <p id="save-message" class="message-box"></p>
                 
                 <div id="event-log-container" class="event-log">
-                    <h3>Town Log (Last 5 Events)</h3>
+                    <h3>Village Log (Last 5 Events)</h3>
                     </div>
             </div>
         </div>
@@ -174,7 +174,7 @@
         <div id="new-mii-modal" class="modal hidden">
             <div class="modal-content">
                 <h2>Create New Resident</h2>
-                <label for="new-mii-name-input">Mii Name:</label>
+                <label for="new-mii-name-input">Vexel Name:</label>
                 <input type="text" id="new-mii-name-input" placeholder="e.g., Jane, Alex" maxlength="15">
                 
                 <label for="new-mii-gender-select">Gender:</label>
@@ -250,7 +250,7 @@
                 <h3>Houses / Apartments</h3>
                 <p>Total Houses: <span id="house-capacity">0 houses (0 slots)</span></p>
                 <p>Residents Housed: <span id="mii-count-housing">0</span></p>
-                <p class="warning-text">Homeless Miis: <span id="homeless-count">0</span> (Cost: 💰300 per house)</p>
+                <p class="warning-text">Homeless Vexels: <span id="homeless-count">0</span> (Cost: 💰300 per house)</p>
                 <button onclick="buildHouse()">Build New House (💰300)</button>
                 
                 <hr>
