@@ -3,7 +3,7 @@ let miiList = [];
 let currentMiiIndex = -1; 
 
 let gameData = {
-    money: 50, 
+    money: 100, 
     inventory: {
         'apple': 2,
         'coffee': 1
@@ -330,7 +330,7 @@ function startGame() {
         
         if (gameData.difficulty === 'easy') {
             gameData.isCaretakerActive = true;
-            gameData.money = Math.max(gameData.money, 100); 
+            gameData.money = Math.max(gameData.money, 200); 
             logEvent("👑 Easy Mode Activated: Caretaker unlocked and starting funds boosted!");
         }
 
