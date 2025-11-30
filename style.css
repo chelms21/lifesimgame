@@ -151,7 +151,7 @@ h2 {
 }
 
 .resident-mini-card.selected {
-    border: 3px solid #ff69b4; /* Highlight the currently selected Mii */
+    border: 3px solid #ff69b4; /* Highlight the currently selected Vexel */
     box-shadow: 0 0 15px rgba(255, 105, 180, 0.7);
 }
 
@@ -175,19 +175,19 @@ h2 {
 .resident-mini-card.asleep { background-color: #e3f2fd; }
 
 
-/* --- Mii Selector --- */
-.mii-selector {
+/* --- Vexel Selector --- */
+.vexel-selector {
     text-align: left;
     margin-bottom: 10px;
 }
 
-.mii-selector label {
+.vexel-selector label {
     font-weight: bold;
     margin-right: 10px;
     color: #333;
 }
 
-.mii-selector select {
+.vexel-selector select {
     padding: 8px;
     border-radius: 5px;
     border: 1px solid #ff69b4;
@@ -195,8 +195,8 @@ h2 {
     min-width: 150px;
 }
 
-/* --- Mii Card --- */
-.mii-card {
+/* --- Vexel Card --- */
+.vexel-card {
     border: 3px solid #ff69b4;
     border-radius: 18px;
     padding: 20px;
@@ -206,7 +206,7 @@ h2 {
     box-shadow: 0 5px 10px rgba(0, 0, 0, 0.05);
 }
 
-/* Mii Request Box */
+/* Vexel Request Box */
 .request-box {
     position: absolute;
     top: -15px;
@@ -227,8 +227,8 @@ h2 {
     to { transform: scale(1.05); }
 }
 
-/* --- Mii Avatar (Face - Keeping original style for character look) --- */
-.mii-avatar {
+/* --- Vexel Avatar (Face - Keeping original style for character look) --- */
+.vexel-avatar {
     margin: 15px auto;
     width: 60px;
     height: 60px;
@@ -241,10 +241,10 @@ h2 {
 }
 
 /* Sleep/Sad/Starving Overlays */
-.mii-avatar.sleeping { background-color: #b0c4de; }
-.mii-avatar.sleeping .face { opacity: 0.5; }
-.mii-avatar.sad { background-color: #f4b3b3; }
-.mii-avatar.starving { border: 4px dashed #f00; }
+.vexel-avatar.sleeping { background-color: #b0c4de; }
+.vexel-avatar.sleeping .face { opacity: 0.5; }
+.vexel-avatar.sad { background-color: #f4b3b3; }
+.vexel-avatar.starving { border: 4px dashed #f00; }
 
 .face {
     position: absolute;
@@ -272,7 +272,7 @@ h2 {
     border-radius: 50%;
 }
 
-.mii-avatar.sleeping .eyes::before, .mii-avatar.sleeping .eyes::after {
+.vexel-avatar.sleeping .eyes::before, .vexel-avatar.sleeping .eyes::after {
     height: 2px; 
     border-radius: 0;
     transform: translateY(5px);
@@ -288,7 +288,7 @@ h2 {
     left: 30%;
 }
 
-.mii-avatar.sad .mouth {
+.vexel-avatar.sad .mouth {
     border-radius: 50% 50% 0 0;
     transform: rotate(180deg); 
 }
