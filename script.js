@@ -1,6 +1,6 @@
 // --- Game State Variables ---
-let miiList = []; 
-let currentMiiIndex = -1; 
+let vexelList = []; 
+let currentVexelIndex = -1; 
 
 let gameData = {
     money: 100, 
@@ -14,12 +14,12 @@ let gameData = {
     mode: 'manual', 
     difficulty: 'normal', 
     townEvents: [], 
-    houses: [], // [{ id: number, occupants: [miiId1, miiId2] }]
+    houses: [], // [{ id: number, occupants: [vexelId1, vexelId2] }]
     facilities: {} // { park: true, restaurant: false }
 }
 
 let gameLoop = null; 
-const SAVE_KEY = 'miiLifeSaveDataV9'; 
+const SAVE_KEY = 'vexelLifeSaveDataV9'; 
 const DECAY_RATE = 2; 
 const UPDATE_INTERVAL = 3000; 
 const REQUEST_CHANCE = 0.03; 
@@ -37,7 +37,7 @@ const SAVINGS_INTEREST_RATE = 0.01;
 
 // --- Town Structure Constants ---
 const HOUSE_COST = 300;
-const HOUSE_CAPACITY = 2; // Max Miis per house
+const HOUSE_CAPACITY = 2; // Max Vexels per house
 const HOMELESS_HAPPINESS_PENALTY = 5;
 
 const FACILITY_COSTS = {
@@ -113,7 +113,7 @@ const REQUESTABLE_ITEMS = ['apple', 'sandwich', 'coffee'];
 // --- DOM Element References ---
 const creationScreen = document.getElementById('creation-screen');
 const gameScreen = document.getElementById('game-screen');
-const miiNameDisplay = document.getElementById('mii-name');
+const vexelNameDisplay = document.getElementById('vexel-name');
 const personalityStat = document.getElementById('personality-stat');
 const genderStat = document.getElementById('gender-stat'); 
 const relationshipStat = document.getElementById('relationship-stat'); 
@@ -122,7 +122,7 @@ const happinessStat = document.getElementById('happiness-stat');
 const hungerStat = document.getElementById('hunger-stat');
 const happinessBar = document.getElementById('happiness-bar');
 const hungerBar = document.getElementById('hunger-bar');
-const miiMessage = document.getElementById('mii-message');
+const vexelMessage = document.getElementById('vexel-message');
 const saveMessage = document.getElementById('save-message');
 const moneyStat = document.getElementById('money-stat');
 const inventoryList = document.getElementById('inventory-list');
@@ -130,13 +130,13 @@ const storeModal = document.getElementById('store-modal');
 const storeMoney = document.getElementById('store-money');
 const storeItemsDiv = document.getElementById('store-items');
 const sleepButton = document.getElementById('sleep-button');
-const miiAvatar = document.querySelector('.mii-avatar');
-const requestBox = document.getElementById('mii-request-box');
+const vexelAvatar = document.querySelector('.vexel-avatar');
+const requestBox = document.getElementById('vexel-request-box');
 const requestedItemName = document.getElementById('requested-item-name');
-const miiSelector = document.getElementById('mii-select');
+const vexelSelector = document.getElementById('vexel-select');
 const residentCountSpan = document.getElementById('resident-count');
 const startTownButton = document.getElementById('start-town-button');
-const newMiiModal = document.getElementById('new-mii-modal');
+const newVexelModal = document.getElementById('new-vexel-modal');
 const investmentModal = document.getElementById('investment-modal'); 
 const investmentTotal = document.getElementById('investment-total'); 
 const investmentRate = document.getElementById('investment-rate'); 
@@ -158,7 +158,7 @@ const relFriendsUl = document.getElementById('rel-friends-ul');
 
 // Job Modal Elements 
 const jobModal = document.getElementById('job-modal');
-const jobMiiName = document.getElementById('job-mii-name');
+const jobVexelName = document.getElementById('job-vexel-name');
 const jobCurrentJob = document.getElementById('job-current-job');
 const jobListDiv = document.getElementById('job-list');
 
@@ -166,7 +166,7 @@ const jobListDiv = document.getElementById('job-list');
 const buildModal = document.getElementById('build-modal');
 const buildMoney = document.getElementById('build-money');
 const houseCapacitySpan = document.getElementById('house-capacity');
-const miiCountHousingSpan = document.getElementById('mii-count-housing');
+const vexelCountHousingSpan = document.getElementById('vexel-count-housing');
 const homelessCountSpan = document.getElementById('homeless-count');
 const facilityListDiv = document.getElementById('facility-list');
 
@@ -209,109 +209,109 @@ function renderEvents() {
     });
 }
 
-function updateSleepStateVisuals(mii) {
-    if (!mii) return;
+function updateSleepStateVisuals(vexel) {
+    if (!vexel) return;
     
-    if (mii.isSleeping) {
+    if (vexel.isSleeping) {
         sleepButton.textContent = "🌅 Wake Up";
         sleepButton.style.backgroundColor = '#4CAF50';
-        miiAvatar.classList.add('sleeping');
+        vexelAvatar.classList.add('sleeping');
     } else {
         sleepButton.textContent = "🛌 Go to Sleep";
         sleepButton.style.backgroundColor = '#ff69b4';
-        miiAvatar.classList.remove('sleeping');
+        vexelAvatar.classList.remove('sleeping');
     }
 }
 
-function getHouseStatus(mii) {
-    if (mii.houseId) {
-        const house = gameData.houses.find(h => h.id === mii.houseId);
+function getHouseStatus(vexel) {
+    if (vexel.houseId) {
+        const house = gameData.houses.find(h => h.id === vexel.houseId);
         if (house) {
-            return `🏠 House ${mii.houseId} (${house.occupants.length}/${HOUSE_CAPACITY})`;
+            return `🏠 House ${vexel.houseId} (${house.occupants.length}/${HOUSE_CAPACITY})`;
         }
     }
     return `⚠️ Homeless`;
 }
 
-function renderCurrentMiiState() {
-    const mii = miiList[currentMiiIndex];
+function renderCurrentVexelState() {
+    const vexel = vexelList[currentVexelIndex];
 
-    if (!mii) {
-        miiNameDisplay.textContent = "No Active Resident";
+    if (!vexel) {
+        vexelNameDisplay.textContent = "No Active Resident";
         [happinessStat, hungerStat, personalityStat, genderStat, relationshipStat, jobStat].forEach(el => el.textContent = '---');
         [happinessBar, hungerBar].forEach(bar => bar.style.width = '0%');
         requestBox.classList.add('hidden');
-        miiAvatar.classList.remove('sad', 'starving', 'sleeping');
+        vexelAvatar.classList.remove('sad', 'starving', 'sleeping');
         return;
     }
     
-    // Update Mii Card Details
-    const partner = mii.relationship.partnerId ? miiList.find(m => m.id === mii.relationship.partnerId) : null;
-    const job = JOBS[mii.job] || JOBS[BASE_JOB]; 
+    // Update Vexel Card Details
+    const partner = vexel.relationship.partnerId ? vexelList.find(m => m.id === vexel.relationship.partnerId) : null;
+    const job = JOBS[vexel.job] || JOBS[BASE_JOB]; 
 
-    miiNameDisplay.textContent = mii.name;
-    genderStat.textContent = mii.gender === 'male' ? 'Male ♂️' : 'Female ♀️'; 
-    personalityStat.textContent = mii.personality.charAt(0).toUpperCase() + mii.personality.slice(1);
+    vexelNameDisplay.textContent = vexel.name;
+    genderStat.textContent = vexel.gender === 'male' ? 'Male ♂️' : 'Female ♀️'; 
+    personalityStat.textContent = vexel.personality.charAt(0).toUpperCase() + vexel.personality.slice(1);
     jobStat.textContent = `${job.icon} ${job.name} (💰${job.basePay}/hr)`; 
     
     // Update Relationship Status Display
     let statusText = 'Single';
-    if (mii.relationship.status === 'dating') {
+    if (vexel.relationship.status === 'dating') {
         statusText = `Dating ${partner ? partner.name : 'Unknown'} ❤️`;
-    } else if (mii.relationship.status === 'spouse') {
+    } else if (vexel.relationship.status === 'spouse') {
         statusText = `Spouse of ${partner ? partner.name : 'Unknown'} 💍`;
     }
     relationshipStat.textContent = statusText;
     
     // Housing Status
-    document.getElementById('housing-stat').textContent = getHouseStatus(mii);
+    document.getElementById('housing-stat').textContent = getHouseStatus(vexel);
 
-    happinessStat.textContent = Math.round(mii.happiness);
-    hungerStat.textContent = Math.round(mii.hunger);
+    happinessStat.textContent = Math.round(vexel.happiness);
+    hungerStat.textContent = Math.round(vexel.hunger);
 
-    happinessBar.style.width = `${mii.happiness}%`;
-    hungerBar.style.width = `${mii.hunger}%`;
+    happinessBar.style.width = `${vexel.happiness}%`;
+    hungerBar.style.width = `${vexel.hunger}%`;
 
     // --- Visuals and Messages ---
-    miiAvatar.classList.remove('sad', 'starving', 'sleeping');
+    vexelAvatar.classList.remove('sad', 'starving', 'sleeping');
     happinessBar.classList.remove('low');
     hungerBar.classList.remove('low');
     
-    updateSleepStateVisuals(mii); 
+    updateSleepStateVisuals(vexel); 
     
-    if (mii.isDead) {
-        miiMessage.textContent = `${mii.name} is gone. Reset the game or focus on another resident.`;
+    if (vexel.isDead) {
+        vexelMessage.textContent = `${vexel.name} is gone. Reset the game or focus on another resident.`;
         return;
     }
 
-    if (mii.currentRequest) {
-        requestedItemName.textContent = ITEMS[mii.currentRequest].name;
+    if (vexel.currentRequest) {
+        requestedItemName.textContent = ITEMS[vexel.currentRequest].name;
         requestBox.classList.remove('hidden');
     } else {
         requestBox.classList.add('hidden');
     }
     
     // Prioritize the homeless message
-    if (!mii.houseId) {
-        miiMessage.textContent = `${mii.name} is homeless and very sad! Build a house immediately.`;
-        miiAvatar.classList.add('sad');
+    if (!vexel.houseId) {
+        vexelMessage.textContent = `${vexel.name} is homeless and very sad! Build a house immediately.`;
+        vexelAvatar.classList.add('sad');
         happinessBar.classList.add('low');
-    } else if (mii.hunger < 20) {
-        miiMessage.textContent = `${mii.name} is critically starving!`;
+    } else if (vexel.hunger < 20) {
+        vexelMessage.textContent = `${vexel.name} is critically starving!`;
         hungerBar.classList.add('low');
-        miiAvatar.classList.add('starving'); 
-    } else if (mii.happiness < 30) {
-        miiMessage.textContent = `${mii.name} is extremely sad.`;
+        vexelAvatar.classList.add('starving'); 
+    } else if (vexel.happiness < 30) {
+        vexelMessage.textContent = `${vexel.name} is extremely sad.`;
         happinessBar.classList.add('low');
-        miiAvatar.classList.add('sad'); 
-    } else if (mii.hunger < 50) {
-        miiMessage.textContent = `${mii.name} is hungry.`;
+        vexelAvatar.classList.add('sad'); 
+    } else if (vexel.hunger < 50) {
+        vexelMessage.textContent = `${vexel.name} is hungry.`;
         hungerBar.classList.add('low');
-    } else if (mii.happiness < 60) {
-        miiMessage.textContent = `${mii.name} needs attention.`;
+    } else if (vexel.happiness < 60) {
+        vexelMessage.textContent = `${vexel.name} needs attention.`;
         happinessBar.classList.add('low');
     } else {
-        miiMessage.textContent = `${mii.name} is doing great!`;
+        vexelMessage.textContent = `${vexel.name} is doing great!`;
     }
 }
 
@@ -335,12 +335,12 @@ function initGame() {
 function showCreationScreen() {
     creationScreen.classList.remove('hidden');
     gameScreen.classList.add('hidden');
-    [newMiiModal, investmentModal, relationshipModal, bankModal, jobModal, buildModal].forEach(m => m.classList.add('hidden'));
+    [newVexelModal, investmentModal, relationshipModal, bankModal, jobModal, buildModal].forEach(m => m.classList.add('hidden'));
     updateCreationScreenState();
 }
 
 function startGame() {
-    if (miiList.length > 0) {
+    if (vexelList.length > 0) {
         const modeSelect = document.getElementById('game-mode-select');
         const difficultySelect = document.getElementById('game-difficulty-select');
 
@@ -353,78 +353,78 @@ function startGame() {
             logEvent("👑 Easy Mode Activated: Caretaker unlocked and starting funds boosted!");
         }
 
-        currentMiiIndex = 0; 
+        currentVexelIndex = 0; 
         showGameScreen();
     }
 }
 
 function showGameScreen() {
-    [creationScreen, newMiiModal, investmentModal, relationshipModal, bankModal, jobModal, buildModal].forEach(m => m.classList.add('hidden'));
+    [creationScreen, newVexelModal, investmentModal, relationshipModal, bankModal, jobModal, buildModal].forEach(m => m.classList.add('hidden'));
     gameScreen.classList.remove('hidden');
     
     if (!gameLoop) {
-        gameLoop = setInterval(updateAllMiiStats, UPDATE_INTERVAL);
+        gameLoop = setInterval(updateAllVexelStats, UPDATE_INTERVAL);
     }
     
-    renderMiiSelector();
+    renderVexelSelector();
     renderInventory();
     renderMoney(); 
     renderCaretakerStatus(); 
-    renderCurrentMiiState(); 
+    renderCurrentVexelState(); 
     renderResidentList(); 
     renderEvents(); 
 }
 
-// --- Mii Creation/Management ---
+// --- Vexel Creation/Management ---
 
-function assignMiiToHouse(mii) {
+function assignVexelToHouse(vexel) {
     const availableHouse = gameData.houses.find(h => h.occupants.length < HOUSE_CAPACITY);
     
     if (availableHouse) {
-        mii.houseId = availableHouse.id;
-        availableHouse.occupants.push(mii.id);
+        vexel.houseId = availableHouse.id;
+        availableHouse.occupants.push(vexel.id);
         return true;
     }
     
-    mii.houseId = null; 
+    vexel.houseId = null; 
     return false;
 }
 
-function unassignMiiFromHouse(mii) {
-     if (mii.houseId) {
-        const house = gameData.houses.find(h => h.id === mii.houseId);
+function unassignVexelFromHouse(vexel) {
+     if (vexel.houseId) {
+        const house = gameData.houses.find(h => h.id === vexel.houseId);
         if (house) {
-            house.occupants = house.occupants.filter(id => id !== mii.id);
+            house.occupants = house.occupants.filter(id => id !== vexel.id);
         }
-        mii.houseId = null;
+        vexel.houseId = null;
     }
 }
 
 function updateCreationScreenState() {
-    residentCountSpan.textContent = miiList.length;
-    if (miiList.length > 0) {
+    residentCountSpan.textContent = vexelList.length;
+    if (vexelList.length > 0) {
         startTownButton.disabled = false;
-        startTownButton.textContent = `Start Town Life (${miiList.length} Miis)`;
+        startTownButton.textContent = `Start Town Life (${vexelList.length} Vexels)`;
     } else {
         startTownButton.disabled = true;
-        startTownButton.textContent = `Start Town Life (Requires 1+ Mii)`;
+        startTownButton.textContent = `Start Town Life (Requires 1+ Vexel)`;
     }
 }
 
-function addMiiToTown() {
-    const nameInput = document.getElementById('mii-name-input');
-    const genderSelect = document.getElementById('mii-gender-select');
-    const personalitySelect = document.getElementById('mii-personality-select');
+function addVexelToTown() {
+    const nameInput = document.getElementById('vexel-name-input');
+    const genderSelect = document.getElementById('vexel-gender-select');
+    const personalitySelect = document.getElementById('vexel-personality-select');
     const name = nameInput.value.trim();
     const gender = genderSelect.value;
     const personality = personalitySelect.value;
     
     if (name === "") {
-        alert("Please give your Mii a name!");
+        alert("Please give your Vexel a name!");
         return;
     }
 
-    const newMii = {
+    const newVexel = {
         id: Date.now(), 
         name: name,
         gender: gender, 
@@ -443,38 +443,38 @@ function addMiiToTown() {
         houseId: null
     };
     
-    miiList.push(newMii);
-    assignMiiToHouse(newMii);
+    vexelList.push(newVexel);
+    assignVexelToHouse(newVexel);
     
     nameInput.value = '';
     
     updateCreationScreenState();
-    logEvent(`${name} has moved into the apartment! (House: ${newMii.houseId || 'None'})`); 
+    logEvent(`${name} has moved into the apartment! (House: ${newVexel.houseId || 'None'})`); 
 }
 
-function openNewMiiCreation() {
-    newMiiModal.classList.remove('hidden');
-    document.getElementById('new-mii-name-input').value = '';
+function openNewVexelCreation() {
+    newVexelModal.classList.remove('hidden');
+    document.getElementById('new-vexel-name-input').value = '';
 }
 
-function closeNewMiiModal() {
-    newMiiModal.classList.add('hidden');
+function closeNewVexelModal() {
+    newVexelModal.classList.add('hidden');
 }
 
-function addNewMii() {
-    const nameInput = document.getElementById('new-mii-name-input');
-    const genderSelect = document.getElementById('new-mii-gender-select');
-    const personalitySelect = document.getElementById('new-mii-personality-select');
+function addNewVexel() {
+    const nameInput = document.getElementById('new-vexel-name-input');
+    const genderSelect = document.getElementById('new-vexel-gender-select');
+    const personalitySelect = document.getElementById('new-vexel-personality-select');
     const name = nameInput.value.trim();
     const gender = genderSelect.value;
     const personality = personalitySelect.value;
     
     if (name === "") {
-        alert("Please give your Mii a name!");
+        alert("Please give your Vexel a name!");
         return;
     }
 
-    const newMii = {
+    const newVexel = {
         id: Date.now(), 
         name: name,
         gender: gender, 
@@ -493,39 +493,39 @@ function addNewMii() {
         houseId: null
     };
     
-    miiList.push(newMii);
-    assignMiiToHouse(newMii);
+    vexelList.push(newVexel);
+    assignVexelToHouse(newVexel);
 
-    closeNewMiiModal();
-    renderMiiSelector(); 
+    closeNewVexelModal();
+    renderVexelSelector(); 
     renderResidentList();
-    logEvent(`👶 New Resident: ${name} has joined the town! (House: ${newMii.houseId || 'None'})`); 
+    logEvent(`👶 New Resident: ${name} has joined the town! (House: ${newVexel.houseId || 'None'})`); 
     saveGame();
 }
 
-function renderMiiSelector() {
-    miiSelector.innerHTML = '';
-    miiList.forEach((mii, index) => {
-        if (!mii.isDead) {
+function renderVexelSelector() {
+    vexelSelector.innerHTML = '';
+    vexelList.forEach((vexel, index) => {
+        if (!vexel.isDead) {
             const option = document.createElement('option');
             option.value = index;
-            option.textContent = mii.name;
-            if (index === currentMiiIndex) {
+            option.textContent = vexel.name;
+            if (index === currentVexelIndex) {
                 option.selected = true;
             }
-            miiSelector.appendChild(option);
+            vexelSelector.appendChild(option);
         }
     });
 }
 
-function switchMii(indexToSelect = null) {
+function switchVexel(indexToSelect = null) {
     if (indexToSelect !== null) {
-        currentMiiIndex = indexToSelect;
-        miiSelector.value = indexToSelect; 
+        currentVexelIndex = indexToSelect;
+        vexelSelector.value = indexToSelect; 
     } else {
-        currentMiiIndex = parseInt(miiSelector.value);
+        currentVexelIndex = parseInt(vexelSelector.value);
     }
-    renderCurrentMiiState();
+    renderCurrentVexelState();
     renderResidentList(); 
 }
 
@@ -533,50 +533,50 @@ function switchMii(indexToSelect = null) {
 
 function renderResidentList() {
     residentListDiv.innerHTML = '';
-    const activeMiis = miiList.filter(m => !m.isDead);
+    const activeVexels = vexelList.filter(m => !m.isDead);
 
-    if (activeMiis.length === 0) {
-        residentListDiv.innerHTML = '<p>No active residents. Start a new Mii!</p>';
+    if (activeVexels.length === 0) {
+        residentListDiv.innerHTML = '<p>No active residents. Start a new Vexel!</p>';
         return;
     }
 
-    activeMiis.forEach(mii => {
-        const originalIndex = miiList.findIndex(m => m.id === mii.id); 
+    activeVexels.forEach(vexel => {
+        const originalIndex = vexelList.findIndex(m => m.id === vexel.id); 
         
         const card = document.createElement('div');
         card.className = 'resident-mini-card';
         
-        let statusIcon = mii.gender === 'male' ? '♂️' : '♀️';
+        let statusIcon = vexel.gender === 'male' ? '♂️' : '♀️';
         let statusClass = '';
 
-        if (!mii.houseId) {
+        if (!vexel.houseId) {
             statusIcon = '🚨';
             statusClass = 'homeless';
-        } else if (mii.relationship.status !== 'single') {
-            statusIcon = mii.relationship.status === 'dating' ? '❤️' : '💍';
-        } else if (mii.isSleeping) {
+        } else if (vexel.relationship.status !== 'single') {
+            statusIcon = vexel.relationship.status === 'dating' ? '❤️' : '💍';
+        } else if (vexel.isSleeping) {
             statusIcon = '😴';
             statusClass = 'asleep';
-        } else if (mii.hunger < CARETAKER_THRESHOLD) {
+        } else if (vexel.hunger < CARETAKER_THRESHOLD) {
             statusIcon = '🍔';
             statusClass = 'hungry';
-        } else if (mii.happiness < CARETAKER_THRESHOLD) {
+        } else if (vexel.happiness < CARETAKER_THRESHOLD) {
             statusIcon = '😞';
             statusClass = 'sad';
         }
 
-        if (originalIndex === currentMiiIndex) {
+        if (originalIndex === currentVexelIndex) {
             card.classList.add('selected');
         }
         
         if (statusClass) card.classList.add(statusClass);
 
-        card.setAttribute('onclick', `switchMii(${originalIndex})`);
+        card.setAttribute('onclick', `switchVexel(${originalIndex})`);
 
         card.innerHTML = `
-            <h5>${mii.name}</h5>
+            <h5>${vexel.name}</h5>
             <p><span class="status-icon">${statusIcon}</span></p>
-            <p>${Math.round(mii.happiness)}❤️ ${Math.round(mii.hunger)}🍔</p>
+            <p>${Math.round(vexel.happiness)}❤️ ${Math.round(vexel.hunger)}🍔</p>
         `;
         residentListDiv.appendChild(card);
     });
@@ -613,16 +613,16 @@ function buyCaretaker() {
 // --- Job Management System --- 
 
 function openJobModal() {
-    const mii = miiList[currentMiiIndex];
-    if (!mii) return;
+    const vexel = vexelList[currentVexelIndex];
+    if (!vexel) return;
 
-    jobMiiName.textContent = mii.name;
-    jobCurrentJob.textContent = JOBS[mii.job].name;
+    jobVexelName.textContent = vexel.name;
+    jobCurrentJob.textContent = JOBS[vexel.job].name;
     jobListDiv.innerHTML = '';
     
     for (const jobKey in JOBS) {
         const job = JOBS[jobKey];
-        const isCurrent = mii.job === jobKey;
+        const isCurrent = vexel.job === jobKey;
         
         const card = document.createElement('div');
         card.className = `item-slot ${isCurrent ? 'selected-job' : ''}`;
@@ -649,15 +649,15 @@ function closeJobModal() {
 }
 
 function assignJob(jobKey) {
-    const mii = miiList[currentMiiIndex];
-    if (!mii || mii.isDead) return;
+    const vexel = vexelList[currentVexelIndex];
+    if (!vexel || vexel.isDead) return;
 
-    const oldJob = JOBS[mii.job].name;
+    const oldJob = JOBS[vexel.job].name;
     const newJob = JOBS[jobKey].name;
 
-    mii.job = jobKey;
-    logEvent(`💼 Career Change: ${mii.name} switched from ${oldJob} to ${newJob}!`);
-    renderCurrentMiiState();
+    vexel.job = jobKey;
+    logEvent(`💼 Career Change: ${vexel.name} switched from ${oldJob} to ${newJob}!`);
+    renderCurrentVexelState();
     openJobModal(); 
     saveGame();
 }
@@ -678,12 +678,12 @@ function renderBuildModal() {
     
     // Housing Stats
     const totalCapacity = gameData.houses.length * HOUSE_CAPACITY;
-    const totalMiis = miiList.filter(m => !m.isDead).length;
-    const homelessMiis = miiList.filter(m => !m.isDead && !m.houseId).length;
+    const totalVexels = vexelList.filter(m => !m.isDead).length;
+    const homelessVexels = vexelList.filter(m => !m.isDead && !m.houseId).length;
 
     houseCapacitySpan.textContent = `${gameData.houses.length} houses (${totalCapacity} slots)`;
-    miiCountHousingSpan.textContent = totalMiis;
-    homelessCountSpan.textContent = homelessMiis;
+    vexelCountHousingSpan.textContent = totalVexels;
+    homelessCountSpan.textContent = homelessVexels;
     
     // Facility List
     facilityListDiv.innerHTML = '';
@@ -729,16 +729,16 @@ function buildHouse() {
     
     logEvent(`🏡 Construction: A new house (House ${newHouseId}) was built for 💰${HOUSE_COST}!`);
     
-    // Attempt to move one homeless Mii in
-    const homelessMii = miiList.find(m => !m.isDead && !m.houseId);
-    if (homelessMii) {
-        assignMiiToHouse(homelessMii);
-        logEvent(`📦 Moving Day: ${homelessMii.name} moved into the new house!`);
+    // Attempt to move one homeless Vexel in
+    const homelessVexel = vexelList.find(m => !m.isDead && !m.houseId);
+    if (homelessVexel) {
+        assignVexelToHouse(homelessVexel);
+        logEvent(`📦 Moving Day: ${homelessVexel.name} moved into the new house!`);
     }
 
     renderMoney();
     renderBuildModal();
-    renderCurrentMiiState();
+    renderCurrentVexelState();
     renderResidentList();
     saveGame();
 }
@@ -765,14 +765,14 @@ function buildFacility(key, cost) {
 // --- Relationship System ---
 
 function openRelationshipModal() {
-    const mii = miiList[currentMiiIndex];
-    if (!mii) return;
+    const vexel = vexelList[currentVexelIndex];
+    if (!vexel) return;
 
-    document.getElementById('rel-mii-name').textContent = mii.name;
-    document.getElementById('rel-status').textContent = mii.relationship.status.toUpperCase();
+    document.getElementById('rel-vexel-name').textContent = vexel.name;
+    document.getElementById('rel-status').textContent = vexel.relationship.status.toUpperCase();
     
-    renderRelationshipActions(mii);
-    renderFriendList(mii);
+    renderRelationshipActions(vexel);
+    renderFriendList(vexel);
     
     relationshipModal.classList.remove('hidden');
 }
@@ -781,24 +781,24 @@ function closeRelationshipModal() {
     relationshipModal.classList.add('hidden');
 }
 
-function renderRelationshipActions(mii) {
+function renderRelationshipActions(vexel) {
     const relActionsDiv = document.getElementById('rel-actions');
     relActionsDiv.innerHTML = '';
     
-    const potentialPartners = miiList.filter(
-        m => m.id !== mii.id && 
+    const potentialPartners = vexelList.filter(
+        m => m.id !== vexel.id && 
              !m.isDead &&
              m.relationship.status === 'single' &&
-             m.gender !== mii.gender
+             m.gender !== vexel.gender
     );
     
-    if (mii.relationship.status === 'single') {
+    if (vexel.relationship.status === 'single') {
         if (potentialPartners.length > 0) {
             const select = document.createElement('select');
             select.id = 'date-target-select';
             
             const defaultOption = document.createElement('option');
-            defaultOption.textContent = "Select Mii to Ask Out";
+            defaultOption.textContent = "Select Vexel to Ask Out";
             defaultOption.value = "";
             select.appendChild(defaultOption);
             
@@ -820,30 +820,30 @@ function renderRelationshipActions(mii) {
             relActionsDiv.appendChild(button);
 
         } else {
-            relActionsDiv.innerHTML = '<p>No available Miis to ask out right now.</p>';
+            relActionsDiv.innerHTML = '<p>No available Vexels to ask out right now.</p>';
         }
         
-    } else if (mii.relationship.status === 'dating') {
-        const partner = miiList.find(m => m.id === mii.relationship.partnerId);
+    } else if (vexel.relationship.status === 'dating') {
+        const partner = vexelList.find(m => m.id === vexel.relationship.partnerId);
         
         relActionsDiv.innerHTML = `
-            <p>Dating: ${partner ? partner.name : 'Unknown Mii'}</p>
+            <p>Dating: ${partner ? partner.name : 'Unknown Vexel'}</p>
             <button class="propose" onclick="attemptProposal(${partner.id})">Propose Marriage 💍</button>
             <button onclick="attemptBreakup(${partner.id})">Break Up 💔</button>
         `;
         
-    } else if (mii.relationship.status === 'spouse') {
-        const partner = miiList.find(m => m.id === mii.relationship.partnerId);
+    } else if (vexel.relationship.status === 'spouse') {
+        const partner = vexelList.find(m => m.id === vexel.relationship.partnerId);
         
         relActionsDiv.innerHTML = `
-            <p>Married to: ${partner ? partner.name : 'Unknown Mii'} 💍</p>
+            <p>Married to: ${partner ? partner.name : 'Unknown Vexel'} 💍</p>
             <button onclick="attemptBreakup(${partner.id})">Divorce 💔 (Major Happiness Loss!)</button>
         `;
     }
     
-    const potentialFriends = miiList.filter(
-        m => m.id !== mii.id && 
-             !mii.relationship.friends.includes(m.id) &&
+    const potentialFriends = vexelList.filter(
+        m => m.id !== vexel.id && 
+             !vexel.relationship.friends.includes(m.id) &&
              !m.isDead
     );
     
@@ -852,7 +852,7 @@ function renderRelationshipActions(mii) {
         friendSelect.id = 'friend-target-select';
         
         const defaultOption = document.createElement('option');
-        defaultOption.textContent = "Select Mii to Befriend";
+        defaultOption.textContent = "Select Vexel to Befriend";
         defaultOption.value = "";
         friendSelect.appendChild(defaultOption);
         
@@ -877,21 +877,21 @@ function renderRelationshipActions(mii) {
     }
 }
 
-function renderFriendList(mii) {
+function renderFriendList(vexel) {
     relFriendsUl.innerHTML = '';
     
-    if (mii.relationship.friends.length === 0) {
+    if (vexel.relationship.friends.length === 0) {
         relFriendsUl.innerHTML = '<li>No friends yet.</li>';
         return;
     }
     
-    mii.relationship.friends.forEach(friendId => {
-        const friend = miiList.find(m => m.id === friendId);
+    vexel.relationship.friends.forEach(friendId => {
+        const friend = vexelList.find(m => m.id === friendId);
         if (friend && !friend.isDead) {
             const li = document.createElement('li');
             let icon = '🤝';
-            if (mii.relationship.partnerId === friendId) {
-                icon = mii.relationship.status === 'spouse' ? '💍' : '❤️';
+            if (vexel.relationship.partnerId === friendId) {
+                icon = vexel.relationship.status === 'spouse' ? '💍' : '❤️';
             }
             li.textContent = `${icon} ${friend.name} (${friend.gender === 'male' ? '♂️' : '♀️'})`;
             relFriendsUl.appendChild(li);
@@ -900,175 +900,175 @@ function renderFriendList(mii) {
 }
 
 function attemptFriendship(targetId) {
-    const mii = miiList[currentMiiIndex];
-    const target = miiList.find(m => m.id === parseInt(targetId)); 
+    const vexel = vexelList[currentVexelIndex];
+    const target = vexelList.find(m => m.id === parseInt(targetId)); 
 
-    if (!mii || !target) return;
+    if (!vexel || !target) return;
 
     if (Math.random() < FRIENDSHIP_SUCCESS_CHANCE) {
-        mii.relationship.friends.push(target.id);
-        target.relationship.friends.push(mii.id);
+        vexel.relationship.friends.push(target.id);
+        target.relationship.friends.push(vexel.id);
         
-        mii.happiness = Math.min(100, mii.happiness + FRIENDSHIP_HAPPINESS_BONUS);
+        vexel.happiness = Math.min(100, vexel.happiness + FRIENDSHIP_HAPPINESS_BONUS);
         target.happiness = Math.min(100, target.happiness + FRIENDSHIP_HAPPINESS_BONUS);
         
-        logEvent(`🤝 Friendship: ${mii.name} and ${target.name} are now friends!`);
+        logEvent(`🤝 Friendship: ${vexel.name} and ${target.name} are now friends!`);
     } else {
-        mii.happiness = Math.max(0, mii.happiness - 5);
-        logEvent(`😔 ${mii.name}'s attempt to befriend ${target.name} failed.`);
+        vexel.happiness = Math.max(0, vexel.happiness - 5);
+        logEvent(`😔 ${vexel.name}'s attempt to befriend ${target.name} failed.`);
     }
     
-    renderCurrentMiiState();
+    renderCurrentVexelState();
     openRelationshipModal();
     saveGame();
 }
 
 function attemptDating(targetId) {
-    const mii = miiList[currentMiiIndex];
-    const target = miiList.find(m => m.id === parseInt(targetId)); 
+    const vexel = vexelList[currentVexelIndex];
+    const target = vexelList.find(m => m.id === parseInt(targetId)); 
 
-    if (!mii || !target || mii.relationship.status !== 'single' || target.relationship.status !== 'single' || mii.gender === target.gender) {
-        miiMessage.textContent = "Cannot attempt dating. Check status and gender requirements.";
+    if (!vexel || !target || vexel.relationship.status !== 'single' || target.relationship.status !== 'single' || vexel.gender === target.gender) {
+        vexelMessage.textContent = "Cannot attempt dating. Check status and gender requirements.";
         return;
     }
 
-    const happinessFactor = (mii.happiness + target.happiness) / 200;
+    const happinessFactor = (vexel.happiness + target.happiness) / 200;
     const successChance = (1 - DATING_FAIL_CHANCE) * happinessFactor;
 
     if (Math.random() < successChance) {
-        mii.relationship.status = 'dating';
-        mii.relationship.partnerId = target.id;
+        vexel.relationship.status = 'dating';
+        vexel.relationship.partnerId = target.id;
         target.relationship.status = 'dating';
-        target.relationship.partnerId = mii.id;
+        target.relationship.partnerId = vexel.id;
 
-        mii.happiness = Math.min(100, mii.happiness + DATING_HAPPINESS_BONUS);
+        vexel.happiness = Math.min(100, vexel.happiness + DATING_HAPPINESS_BONUS);
         target.happiness = Math.min(100, target.happiness + DATING_HAPPINESS_BONUS);
         
-        if (mii.houseId) {
-            unassignMiiFromHouse(target); 
-            assignMiiToHouse(target); 
-            if (target.houseId !== mii.houseId) {
-                 logEvent(`❤️ ${mii.name} and ${target.name} are dating, but there was no room to move in!`);
+        if (vexel.houseId) {
+            unassignVexelFromHouse(target); 
+            assignVexelToHouse(target); 
+            if (target.houseId !== vexel.houseId) {
+                 logEvent(`❤️ ${vexel.name} and ${target.name} are dating, but there was no room to move in!`);
             } else {
-                 logEvent(`❤️ ${mii.name} and ${target.name} are now dating and moved in together!`); 
+                 logEvent(`❤️ ${vexel.name} and ${target.name} are now dating and moved in together!`); 
             }
         } else {
-             unassignMiiFromHouse(mii); 
-             unassignMiiFromHouse(target);
+             unassignVexelFromHouse(vexel); 
+             unassignVexelFromHouse(target);
              const emptyHouse = gameData.houses.find(h => h.occupants.length === 0);
              if (emptyHouse) {
-                 assignMiiToHouse(mii);
-                 assignMiiToHouse(target);
-                 logEvent(`❤️ ${mii.name} and ${target.name} are dating and moved into an empty house!`);
+                 assignVexelToHouse(vexel);
+                 assignVexelToHouse(target);
+                 logEvent(`❤️ ${vexel.name} and ${target.name} are dating and moved into an empty house!`);
              } else {
-                 logEvent(`❤️ ${mii.name} and ${target.name} are dating but are now homeless!`);
+                 logEvent(`❤️ ${vexel.name} and ${target.name} are dating but are now homeless!`);
              }
         }
         
     } else {
-        mii.happiness = Math.max(0, mii.happiness - 15);
-        miiMessage.textContent = `💔 ${target.name} gently let ${mii.name} down. Ouch.`;
-        logEvent(`💔 ${mii.name} was rejected by ${target.name}.`); 
+        vexel.happiness = Math.max(0, vexel.happiness - 15);
+        vexelMessage.textContent = `💔 ${target.name} gently let ${vexel.name} down. Ouch.`;
+        logEvent(`💔 ${vexel.name} was rejected by ${target.name}.`); 
     }
     
-    renderCurrentMiiState();
+    renderCurrentVexelState();
     openRelationshipModal();
     saveGame();
 }
 
 function attemptBreakup(partnerId) {
-    const mii = miiList[currentMiiIndex];
-    const partner = miiList.find(m => m.id === parseInt(partnerId)); 
+    const vexel = vexelList[currentVexelIndex];
+    const partner = vexelList.find(m => m.id === parseInt(partnerId)); 
     
-    if (!mii || !partner || mii.relationship.partnerId !== partner.id) return;
+    if (!vexel || !partner || vexel.relationship.partnerId !== partner.id) return;
     
-    if (confirm(`Are you sure ${mii.name} wants to break up with ${partner.name}? This will cause sadness!`)) {
+    if (confirm(`Are you sure ${vexel.name} wants to break up with ${partner.name}? This will cause sadness!`)) {
         
-        mii.relationship.status = 'single';
-        mii.relationship.partnerId = null;
-        mii.happiness = Math.max(0, mii.happiness - BREAKUP_HAPPINESS_PENALTY);
+        vexel.relationship.status = 'single';
+        vexel.relationship.partnerId = null;
+        vexel.happiness = Math.max(0, vexel.happiness - BREAKUP_HAPPINESS_PENALTY);
         
         partner.relationship.status = 'single';
         partner.relationship.partnerId = null;
         partner.happiness = Math.max(0, partner.happiness - BREAKUP_HAPPINESS_PENALTY);
         
-        unassignMiiFromHouse(partner);
-        assignMiiToHouse(partner);
+        unassignVexelFromHouse(partner);
+        assignVexelToHouse(partner);
 
-        logEvent(`😭 ${mii.name} and ${partner.name} broke up! ${partner.name} moved out (House: ${partner.houseId || 'None'}).`); 
+        logEvent(`😭 ${vexel.name} and ${partner.name} broke up! ${partner.name} moved out (House: ${partner.houseId || 'None'}).`); 
     }
 
-    renderCurrentMiiState();
+    renderCurrentVexelState();
     openRelationshipModal();
     saveGame();
 }
 
 function attemptProposal(partnerId) {
-    const mii = miiList[currentMiiIndex];
-    const partner = miiList.find(m => m.id === parseInt(partnerId)); 
+    const vexel = vexelList[currentVexelIndex];
+    const partner = vexelList.find(m => m.id === parseInt(partnerId)); 
 
-    if (!mii || !partner) {
-        miiMessage.textContent = "Error: Mii or partner not found for proposal.";
+    if (!vexel || !partner) {
+        vexelMessage.textContent = "Error: Vexel or partner not found for proposal.";
         return;
     }
 
-    if (mii.relationship.status !== 'dating') {
-        miiMessage.textContent = "Only dating Miis can propose marriage.";
+    if (vexel.relationship.status !== 'dating') {
+        vexelMessage.textContent = "Only dating Vexels can propose marriage.";
         return;
     }
 
-    const successChance = (mii.happiness + partner.happiness) / 200 * PROPOSAL_CHANCE;
+    const successChance = (vexel.happiness + partner.happiness) / 200 * PROPOSAL_CHANCE;
 
     if (Math.random() < successChance) {
-        mii.relationship.status = 'spouse';
+        vexel.relationship.status = 'spouse';
         partner.relationship.status = 'spouse';
-        mii.happiness = Math.min(100, mii.happiness + SPOUSE_HAPPINESS_BONUS);
+        vexel.happiness = Math.min(100, vexel.happiness + SPOUSE_HAPPINESS_BONUS);
         partner.happiness = Math.min(100, partner.happiness + SPOUSE_HAPPINESS_BONUS);
         
-        if (mii.houseId && partner.houseId !== mii.houseId) {
-            unassignMiiFromHouse(partner);
-            assignMiiToHouse(partner); 
+        if (vexel.houseId && partner.houseId !== vexel.houseId) {
+            unassignVexelFromHouse(partner);
+            assignVexelToHouse(partner); 
         }
 
-        logEvent(`🔔 ${partner.name} said YES! ${mii.name} and ${partner.name} are now happily married! 💍`); 
+        logEvent(`🔔 ${partner.name} said YES! ${vexel.name} and ${partner.name} are now happily married! 💍`); 
     } else {
-        mii.happiness = Math.max(0, mii.happiness - 20);
-        miiMessage.textContent = `😔 ${partner.name} needs more time before marriage.`;
+        vexel.happiness = Math.max(0, vexel.happiness - 20);
+        vexelMessage.textContent = `😔 ${partner.name} needs more time before marriage.`;
     }
 
-    renderCurrentMiiState();
+    renderCurrentVexelState();
     openRelationshipModal();
     saveGame();
 }
 
 // --- Main Game Loop Functions ---
 
-function updateAllMiiStats() {
+function updateAllVexelStats() {
     gameData.money += Math.floor(gameData.investmentTotal / INVESTMENT_RATE);
     gameData.savingsTotal = Math.floor(gameData.savingsTotal * (1 + SAVINGS_INTEREST_RATE));
 
-    const activeMiis = miiList.filter(m => !m.isDead);
+    const activeVexels = vexelList.filter(m => !m.isDead);
 
     if (gameData.isCaretakerActive) {
-        handleCaretaker(activeMiis);
+        handleCaretaker(activeVexels);
     }
     
     if (gameData.mode === 'automatic') {
-        handleAutonomousActions(activeMiis);
+        handleAutonomousActions(activeVexels);
     }
 
-    activeMiis.forEach(mii => {
+    activeVexels.forEach(vexel => {
         let happinessDecay = DECAY_RATE;
         let hungerDecay = DECAY_RATE;
 
-        if (mii.isSleeping) {
-            mii.happiness = Math.min(100, mii.happiness + 3);
-            mii.hunger = Math.max(0, mii.hunger - 1); 
+        if (vexel.isSleeping) {
+            vexel.happiness = Math.min(100, vexel.happiness + 3);
+            vexel.hunger = Math.max(0, vexel.hunger - 1); 
             return; 
         }
 
         // --- Decay Modifiers ---
-        if (!mii.houseId) {
+        if (!vexel.houseId) {
             happinessDecay += HOMELESS_HAPPINESS_PENALTY;
         }
 
@@ -1076,57 +1076,57 @@ function updateAllMiiStats() {
             happinessDecay -= FACILITY_BONUSES.park.happiness;
         }
 
-        if (mii.hunger < 50) {
+        if (vexel.hunger < 50) {
             happinessDecay += 2; 
         }
 
-        if (mii.relationship.status === 'dating') {
+        if (vexel.relationship.status === 'dating') {
             happinessDecay -= 1; 
-        } else if (mii.relationship.status === 'spouse') {
+        } else if (vexel.relationship.status === 'spouse') {
             happinessDecay -= 2; 
         }
         
-        if (mii.job === BASE_JOB) {
+        if (vexel.job === BASE_JOB) {
             happinessDecay += 1; 
         }
         // --- End Decay Modifiers ---
 
-        mii.hunger = Math.max(0, mii.hunger - hungerDecay);
-        mii.happiness = Math.max(0, mii.happiness - happinessDecay);
+        vexel.hunger = Math.max(0, vexel.hunger - hungerDecay);
+        vexel.happiness = Math.max(0, vexel.happiness - happinessDecay);
 
-        if (!mii.currentRequest && Math.random() < REQUEST_CHANCE && mii.happiness < 70) {
-            mii.currentRequest = REQUESTABLE_ITEMS[Math.floor(Math.random() * REQUESTABLE_ITEMS.length)];
+        if (!vexel.currentRequest && Math.random() < REQUEST_CHANCE && vexel.happiness < 70) {
+            vexel.currentRequest = REQUESTABLE_ITEMS[Math.floor(Math.random() * REQUESTABLE_ITEMS.length)];
         }
-        if (mii.currentRequest) {
-            mii.happiness = Math.max(0, mii.happiness - 1);
+        if (vexel.currentRequest) {
+            vexel.happiness = Math.max(0, vexel.happiness - 1);
         }
 
-        if (mii.happiness <= 0 && !mii.isDead) {
-            mii.isDead = true;
-            unassignMiiFromHouse(mii);
+        if (vexel.happiness <= 0 && !vexel.isDead) {
+            vexel.isDead = true;
+            unassignVexelFromHouse(vexel);
 
-            if (mii.id === miiList[currentMiiIndex]?.id) {
-                miiMessage.textContent = `💔 Oh no! ${mii.name} has passed away due to extreme sadness.`;
+            if (vexel.id === vexelList[currentVexelIndex]?.id) {
+                vexelMessage.textContent = `💔 Oh no! ${vexel.name} has passed away due to extreme sadness.`;
             }
-            logEvent(`💀 Death: ${mii.name} has passed away due to extreme sadness.`); 
+            logEvent(`💀 Death: ${vexel.name} has passed away due to extreme sadness.`); 
 
-            if (mii.relationship.partnerId) {
-                const partner = miiList.find(m => m.id === mii.relationship.partnerId);
+            if (vexel.relationship.partnerId) {
+                const partner = vexelList.find(m => m.id === vexel.relationship.partnerId);
                 if (partner) {
                     partner.relationship.status = 'single';
                     partner.relationship.partnerId = null;
                     partner.happiness = Math.max(0, partner.happiness - 60);
-                    logEvent(`😔 Grief: ${partner.name} is deeply saddened by the passing of ${mii.name}.`); 
+                    logEvent(`😔 Grief: ${partner.name} is deeply saddened by the passing of ${vexel.name}.`); 
                 }
             }
         }
     });
 
-    handleRelationshipEvents(activeMiis);
+    handleRelationshipEvents(activeVexels);
 
     renderMoney();
-    renderCurrentMiiState();
-    renderMiiSelector();
+    renderCurrentVexelState();
+    renderVexelSelector();
     renderResidentList();
     renderEvents(); 
     checkIfTownIsOver();
@@ -1135,44 +1135,44 @@ function updateAllMiiStats() {
 
 // --- Dynamic Relationship Event Handlers ---
 
-function handleRelationshipEvents(activeMiis) {
-    activeMiis.forEach(mii => {
-        if (mii.relationship.partnerId) {
-            const partner = activeMiis.find(m => m.id === mii.relationship.partnerId);
+function handleRelationshipEvents(activeVexels) {
+    activeVexels.forEach(vexel => {
+        if (vexel.relationship.partnerId) {
+            const partner = activeVexels.find(m => m.id === vexel.relationship.partnerId);
             if (!partner) return;
 
             if (Math.random() < ARGUE_CHANCE) {
-                mii.happiness = Math.max(0, mii.happiness - ARGUE_HAPPINESS_LOSS);
+                vexel.happiness = Math.max(0, vexel.happiness - ARGUE_HAPPINESS_LOSS);
                 partner.happiness = Math.max(0, partner.happiness - ARGUE_HAPPINESS_LOSS);
-                logEvent(`💥 Argument: ${mii.name} and ${partner.name} had a huge fight!`);
+                logEvent(`💥 Argument: ${vexel.name} and ${partner.name} had a huge fight!`);
             } 
             
-            else if ((mii.happiness < 50 || partner.happiness < 50) && Math.random() < MAKEUP_CHANCE) {
-                mii.happiness = Math.min(100, mii.happiness + MAKEUP_HAPPINESS_GAIN);
+            else if ((vexel.happiness < 50 || partner.happiness < 50) && Math.random() < MAKEUP_CHANCE) {
+                vexel.happiness = Math.min(100, vexel.happiness + MAKEUP_HAPPINESS_GAIN);
                 partner.happiness = Math.min(100, partner.happiness + MAKEUP_HAPPINESS_GAIN);
-                logEvent(`🤗 Make-up: ${mii.name} and ${partner.name} made up after a tough time!`);
+                logEvent(`🤗 Make-up: ${vexel.name} and ${partner.name} made up after a tough time!`);
             }
 
-            if (mii.relationship.friends.length > 0 && Math.random() < JEALOUSY_CHANCE) {
-                const friendId = mii.relationship.friends[Math.floor(Math.random() * mii.relationship.friends.length)];
+            if (vexel.relationship.friends.length > 0 && Math.random() < JEALOUSY_CHANCE) {
+                const friendId = vexel.relationship.friends[Math.floor(Math.random() * vexel.relationship.friends.length)];
                 if (friendId !== partner.id) {
                     partner.happiness = Math.max(0, partner.happiness - JEALOUSY_HAPPINESS_LOSS);
-                    logEvent(`😬 Jealousy: ${partner.name} got jealous of ${mii.name}'s relationship with a friend.`);
+                    logEvent(`😬 Jealousy: ${partner.name} got jealous of ${vexel.name}'s relationship with a friend.`);
                 }
             }
         }
         
-        mii.relationship.friends.forEach(friendId => {
-            const friend = activeMiis.find(m => m.id === friendId);
+        vexel.relationship.friends.forEach(friendId => {
+            const friend = activeVexels.find(m => m.id === friendId);
             if (friend && Math.random() < FRIEND_ARGUE_CHANCE) {
-                if (friend.relationship.friends.includes(mii.id)) {
-                    mii.happiness = Math.max(0, mii.happiness - FRIEND_ARGUE_LOSS);
+                if (friend.relationship.friends.includes(vexel.id)) {
+                    vexel.happiness = Math.max(0, vexel.happiness - FRIEND_ARGUE_LOSS);
                     friend.happiness = Math.max(0, friend.happiness - FRIEND_ARGUE_LOSS);
                     
-                    mii.relationship.friends = mii.relationship.friends.filter(id => id !== friendId);
-                    friend.relationship.friends = friend.relationship.friends.filter(id => id !== mii.id);
+                    vexel.relationship.friends = vexel.relationship.friends.filter(id => id !== friendId);
+                    friend.relationship.friends = friend.relationship.friends.filter(id => id !== vexel.id);
 
-                    logEvent(`😤 Friend Fight: ${mii.name} and ${friend.name} had a falling out and broke their friendship.`);
+                    logEvent(`😤 Friend Fight: ${vexel.name} and ${friend.name} had a falling out and broke their friendship.`);
                 }
             }
         });
@@ -1182,70 +1182,70 @@ function handleRelationshipEvents(activeMiis) {
 
 // --- UPDATED CARETAKER SYSTEM ---
 
-function handleCaretaker(activeMiis) {
+function handleCaretaker(activeVexels) {
     let summary = { fed: 0, entertained: 0, slept: 0, woke: 0, jobs: 0 };
     
     // 1. GLOBAL CHECKS (Housing)
-    const homelessMiis = activeMiis.filter(m => !m.houseId);
-    // Only build if we have a healthy buffer (Cost + 200) so we don't starve existing Miis
-    if (homelessMiis.length > 0 && gameData.money >= (HOUSE_COST + 200)) {
+    const homelessVexels = activeVexels.filter(m => !m.houseId);
+    // Only build if we have a healthy buffer (Cost + 200) so we don't starve existing Vexels
+    if (homelessVexels.length > 0 && gameData.money >= (HOUSE_COST + 200)) {
         buildHouse(); // This logs its own major event, which is fine
     }
 
-    activeMiis.forEach(mii => {
-        if (mii.isDead) return;
+    activeVexels.forEach(vexel => {
+        if (vexel.isDead) return;
 
         // 2. JOB ASSIGNMENT (Fix Unemployment)
-        if (mii.job === 'unemployed') {
-            mii.job = 'gardener';
+        if (vexel.job === 'unemployed') {
+            vexel.job = 'gardener';
             summary.jobs++;
         }
 
         // 3. CRITICAL EMERGENCY (Stats < 25) - High Priority
-        if (mii.hunger < 25) {
-            if (caretakerObtainAndUse('sandwich', mii, true)) summary.fed++;
+        if (vexel.hunger < 25) {
+            if (caretakerObtainAndUse('sandwich', vexel, true)) summary.fed++;
         }
-        if (mii.happiness < 25) {
-             if (caretakerObtainAndUse('toy_car', mii, true)) summary.entertained++;
+        if (vexel.happiness < 25) {
+             if (caretakerObtainAndUse('toy_car', vexel, true)) summary.entertained++;
         }
 
         // 4. REQUEST FULFILLMENT
-        if (mii.currentRequest && mii.happiness < 80) {
-            const type = ITEMS[mii.currentRequest].type;
-            if (caretakerObtainAndUse(mii.currentRequest, mii, true)) {
+        if (vexel.currentRequest && vexel.happiness < 80) {
+            const type = ITEMS[vexel.currentRequest].type;
+            if (caretakerObtainAndUse(vexel.currentRequest, vexel, true)) {
                 if (type === 'food') summary.fed++;
                 else summary.entertained++;
             }
         }
 
         // 5. STANDARD MAINTENANCE (Stats < Threshold)
-        if (mii.hunger < CARETAKER_THRESHOLD) {
-            if (caretakerObtainAndUse(CARETAKER_FOOD, mii, true)) summary.fed++;
+        if (vexel.hunger < CARETAKER_THRESHOLD) {
+            if (caretakerObtainAndUse(CARETAKER_FOOD, vexel, true)) summary.fed++;
         }
 
-        if (mii.hunger > CARETAKER_THRESHOLD && mii.happiness < CARETAKER_THRESHOLD) {
-             if (caretakerObtainAndUse(CARETAKER_MOOD, mii, true)) summary.entertained++;
+        if (vexel.hunger > CARETAKER_THRESHOLD && vexel.happiness < CARETAKER_THRESHOLD) {
+             if (caretakerObtainAndUse(CARETAKER_MOOD, vexel, true)) summary.entertained++;
         }
 
         // 6. SLEEP MANAGEMENT
-        if (mii.happiness < 40 && mii.hunger > 50 && !mii.isSleeping && Math.random() < 0.2) {
-            mii.isSleeping = true;
+        if (vexel.happiness < 40 && vexel.hunger > 50 && !vexel.isSleeping && Math.random() < 0.2) {
+            vexel.isSleeping = true;
             summary.slept++;
-            updateSleepStateVisuals(mii);
+            updateSleepStateVisuals(vexel);
         }
         
-        if (mii.isSleeping && mii.happiness >= 95) {
-            mii.isSleeping = false;
+        if (vexel.isSleeping && vexel.happiness >= 95) {
+            vexel.isSleeping = false;
             summary.woke++;
-            updateSleepStateVisuals(mii);
+            updateSleepStateVisuals(vexel);
         }
     });
 
     // Generate Grouped Log
     let logParts = [];
     if (summary.jobs > 0) logParts.push(`assigned ${summary.jobs} jobs`);
-    if (summary.fed > 0) logParts.push(`fed ${summary.fed} Miis`);
-    if (summary.entertained > 0) logParts.push(`entertained ${summary.entertained} Miis`);
+    if (summary.fed > 0) logParts.push(`fed ${summary.fed} Vexels`);
+    if (summary.entertained > 0) logParts.push(`entertained ${summary.entertained} Vexels`);
     if (summary.slept > 0) logParts.push(`put ${summary.slept} to bed`);
     if (summary.woke > 0) logParts.push(`woke ${summary.woke} up`);
 
@@ -1254,13 +1254,13 @@ function handleCaretaker(activeMiis) {
     }
 }
 
-function caretakerObtainAndUse(itemKey, mii, silent = false) {
+function caretakerObtainAndUse(itemKey, vexel, silent = false) {
     const item = ITEMS[itemKey];
     if (!item) return false;
 
     // 1. Try Inventory
     if (gameData.inventory[itemKey] && gameData.inventory[itemKey] > 0) {
-        useItem(itemKey, mii, true); // true = isCaretaker (bypasses hunger check warning)
+        useItem(itemKey, vexel, true); // true = isCaretaker (bypasses hunger check warning)
         return true;
     }
 
@@ -1274,60 +1274,60 @@ function caretakerObtainAndUse(itemKey, mii, silent = false) {
             if (gameData.facilities.restaurant) {
                 hungerGain = Math.round(hungerGain * FACILITY_BONUSES.restaurant.foodQuality);
             }
-            mii.hunger = Math.min(100, mii.hunger + hungerGain);
+            vexel.hunger = Math.min(100, vexel.hunger + hungerGain);
         }
         
         let happyBonus = item.happiness;
-        if (mii.currentRequest === itemKey) {
+        if (vexel.currentRequest === itemKey) {
             happyBonus += 20;
-            mii.currentRequest = null;
+            vexel.currentRequest = null;
         }
-        mii.happiness = Math.min(100, mii.happiness + happyBonus);
+        vexel.happiness = Math.min(100, vexel.happiness + happyBonus);
 
-        if (!silent) logEvent(`🤖 Caretaker bought and used ${item.name} on ${mii.name}.`);
+        if (!silent) logEvent(`🤖 Caretaker bought and used ${item.name} on ${vexel.name}.`);
         
         renderMoney(); 
-        renderCurrentMiiState();
+        renderCurrentVexelState();
         return true;
     }
     
     return false; // Could not afford or find item
 }
 
-function handleAutonomousActions(activeMiis) {
-    activeMiis.forEach(mii => {
-        if (mii.isDead || mii.isSleeping) return;
+function handleAutonomousActions(activeVexels) {
+    activeVexels.forEach(vexel => {
+        if (vexel.isDead || vexel.isSleeping) return;
 
-        if (mii.job !== BASE_JOB && Math.random() < AUTOMATIC_WORK_CHANCE) {
-            workForMoney(mii);
+        if (vexel.job !== BASE_JOB && Math.random() < AUTOMATIC_WORK_CHANCE) {
+            workForMoney(vexel);
         }
 
-        if (mii.relationship.status === 'single' && Math.random() < AUTOMATIC_DATING_CHANCE) {
-            const potentialPartner = activeMiis.find(
-                m => m.id !== mii.id && 
+        if (vexel.relationship.status === 'single' && Math.random() < AUTOMATIC_DATING_CHANCE) {
+            const potentialPartner = activeVexels.find(
+                m => m.id !== vexel.id && 
                      !m.isDead &&
                      m.relationship.status === 'single' &&
-                     m.gender !== mii.gender &&
+                     m.gender !== vexel.gender &&
                      m.happiness > 50 
             );
             if (potentialPartner) {
                 if (Math.random() < 0.5) { 
-                    mii.relationship.status = 'dating';
-                    mii.relationship.partnerId = potentialPartner.id;
+                    vexel.relationship.status = 'dating';
+                    vexel.relationship.partnerId = potentialPartner.id;
                     potentialPartner.relationship.status = 'dating';
-                    potentialPartner.relationship.partnerId = mii.id;
-                    mii.happiness = Math.min(100, mii.happiness + DATING_HAPPINESS_BONUS);
+                    potentialPartner.relationship.partnerId = vexel.id;
+                    vexel.happiness = Math.min(100, vexel.happiness + DATING_HAPPINESS_BONUS);
                     potentialPartner.happiness = Math.min(100, potentialPartner.happiness + DATING_HAPPINESS_BONUS);
                     
-                    if (mii.houseId) {
-                         unassignMiiFromHouse(potentialPartner);
-                         assignMiiToHouse(potentialPartner);
+                    if (vexel.houseId) {
+                         unassignVexelFromHouse(potentialPartner);
+                         assignVexelToHouse(potentialPartner);
                     }
                     
-                    logEvent(`❤️ Auto-Love: ${mii.name} and ${potentialPartner.name} started dating!`);
+                    logEvent(`❤️ Auto-Love: ${vexel.name} and ${potentialPartner.name} started dating!`);
                 } else {
-                    mii.happiness = Math.max(0, mii.happiness - 10);
-                    logEvent(`💔 Auto-Rejection: ${mii.name} was rejected by ${potentialPartner.name}.`);
+                    vexel.happiness = Math.max(0, vexel.happiness - 10);
+                    logEvent(`💔 Auto-Rejection: ${vexel.name} was rejected by ${potentialPartner.name}.`);
                 }
             }
         }
@@ -1335,9 +1335,9 @@ function handleAutonomousActions(activeMiis) {
 }
 
 function checkIfTownIsOver() {
-    const activeMiis = miiList.filter(m => !m.isDead);
-    if (activeMiis.length === 0 && miiList.length > 0) {
-        if (confirm("🚨 TOWN FAILURE! All Miis have passed away. Do you want to reset the game?")) {
+    const activeVexels = vexelList.filter(m => !m.isDead);
+    if (activeVexels.length === 0 && vexelList.length > 0) {
+        if (confirm("🚨 TOWN FAILURE! All Vexels have passed away. Do you want to reset the game?")) {
             resetGame();
         } else {
             // Keep the town loaded in the failed state
@@ -1462,25 +1462,25 @@ function throwParty() {
     gameData.money -= PARTY_COST;
     logEvent(`🎉 Party! The town threw a massive party for 💰${PARTY_COST}!`);
 
-    miiList.forEach(mii => {
-        if (!mii.isDead) {
-            mii.happiness = Math.min(100, mii.happiness + PARTY_HAPPINESS_BONUS);
+    vexelList.forEach(vexel => {
+        if (!vexel.isDead) {
+            vexel.happiness = Math.min(100, vexel.happiness + PARTY_HAPPINESS_BONUS);
         }
     });
 
     renderMoney();
-    renderCurrentMiiState();
+    renderCurrentVexelState();
     saveGame();
 }
 
-function workForMoney(mii = miiList[currentMiiIndex]) {
-    if (!mii || mii.isDead || mii.isSleeping) return;
+function workForMoney(vexel = vexelList[currentVexelIndex]) {
+    if (!vexel || vexel.isDead || vexel.isSleeping) return;
 
-    const job = JOBS[mii.job];
+    const job = JOBS[vexel.job];
     if (!job) return;
 
-    const happinessBonus = mii.happiness / 100;
-    const hungerPenalty = (100 - mii.hunger) / 100 * 0.5; 
+    const happinessBonus = vexel.happiness / 100;
+    const hungerPenalty = (100 - vexel.hunger) / 100 * 0.5; 
     const basePay = job.basePay;
     
     const restaurantBonus = gameData.facilities.restaurant ? 1.05 : 1;
@@ -1490,29 +1490,29 @@ function workForMoney(mii = miiList[currentMiiIndex]) {
     if (actualPay < 0) actualPay = 0;
 
     gameData.money += actualPay;
-    mii.hunger = Math.max(0, mii.hunger - 15);
-    mii.happiness = Math.max(0, mii.happiness - 5);
+    vexel.hunger = Math.max(0, vexel.hunger - 15);
+    vexel.happiness = Math.max(0, vexel.happiness - 5);
 
-    logEvent(`💼 ${mii.name} worked as a ${job.name} and earned 💰${actualPay}.`);
+    logEvent(`💼 ${vexel.name} worked as a ${job.name} and earned 💰${actualPay}.`);
     
     renderMoney();
-    renderCurrentMiiState();
+    renderCurrentVexelState();
     saveGame();
 }
 
 function toggleSleep() {
-    const mii = miiList[currentMiiIndex];
-    if (!mii || mii.isDead) return;
+    const vexel = vexelList[currentVexelIndex];
+    if (!vexel || vexel.isDead) return;
 
-    mii.isSleeping = !mii.isSleeping;
+    vexel.isSleeping = !vexel.isSleeping;
     
-    if (mii.isSleeping) {
-        logEvent(`💤 ${mii.name} went to sleep to rest.`);
+    if (vexel.isSleeping) {
+        logEvent(`💤 ${vexel.name} went to sleep to rest.`);
     } else {
-        logEvent(`☀️ ${mii.name} woke up.`);
+        logEvent(`☀️ ${vexel.name} woke up.`);
     }
 
-    updateSleepStateVisuals(mii);
+    updateSleepStateVisuals(vexel);
     saveGame();
 }
 
@@ -1538,20 +1538,20 @@ function renderInventory() {
     }
 }
 
-function useItem(key, mii = miiList[currentMiiIndex], isCaretaker = false) {
-    if (!mii || mii.isDead || mii.isSleeping || gameData.inventory[key] < 1) return;
+function useItem(key, vexel = vexelList[currentVexelIndex], isCaretaker = false) {
+    if (!vexel || vexel.isDead || vexel.isSleeping || gameData.inventory[key] < 1) return;
 
     const item = ITEMS[key];
 
-    if (item.type === 'food' && mii.hunger === 100) {
-        if (!isCaretaker) alert(`${mii.name} isn't hungry right now.`);
+    if (item.type === 'food' && vexel.hunger === 100) {
+        if (!isCaretaker) alert(`${vexel.name} isn't hungry right now.`);
         return;
     }
     
-    if (mii.currentRequest === key) {
-        mii.currentRequest = null;
-        mii.happiness = Math.min(100, mii.happiness + 20); 
-        logEvent(`${mii.name} is happy you gave them what they wanted!`);
+    if (vexel.currentRequest === key) {
+        vexel.currentRequest = null;
+        vexel.happiness = Math.min(100, vexel.happiness + 20); 
+        logEvent(`${vexel.name} is happy you gave them what they wanted!`);
     }
 
     if (item.type === 'food') {
@@ -1561,17 +1561,17 @@ function useItem(key, mii = miiList[currentMiiIndex], isCaretaker = false) {
             hungerGain = Math.round(hungerGain * FACILITY_BONUSES.restaurant.foodQuality);
         }
         
-        mii.hunger = Math.min(100, mii.hunger + hungerGain);
-        logEvent(`${mii.name} ate a ${item.name.split(' ')[0]}. Hunger +${hungerGain}.`);
+        vexel.hunger = Math.min(100, vexel.hunger + hungerGain);
+        logEvent(`${vexel.name} ate a ${item.name.split(' ')[0]}. Hunger +${hungerGain}.`);
     }
 
-    mii.happiness = Math.min(100, mii.happiness + item.happiness);
-    logEvent(`${mii.name} is happier. Happiness +${item.happiness}.`);
+    vexel.happiness = Math.min(100, vexel.happiness + item.happiness);
+    logEvent(`${vexel.name} is happier. Happiness +${item.happiness}.`);
     
     gameData.inventory[key]--;
 
     renderInventory();
-    renderCurrentMiiState();
+    renderCurrentVexelState();
     saveGame();
 }
 
@@ -1678,8 +1678,8 @@ function saveGame() {
         const saveData = JSON.stringify(gameData);
         localStorage.setItem(SAVE_KEY, saveData);
         
-        const miiListSave = JSON.stringify(miiList);
-        localStorage.setItem('miiListSave', miiListSave);
+        const vexelListSave = JSON.stringify(vexelList);
+        localStorage.setItem('vexelListSave', vexelListSave);
 
         saveMessage.textContent = `Game saved! (${new Date().toLocaleTimeString()})`;
     } catch (e) {
@@ -1693,20 +1693,20 @@ function loadGame(savedData) {
         const loadedGameData = JSON.parse(savedData);
         gameData = { ...gameData, ...loadedGameData };
 
-        const miiListSave = localStorage.getItem('miiListSave');
+        const vexelListSave = localStorage.getItem('vexelListSave');
         
-        if (miiListSave) {
-             miiList = JSON.parse(miiListSave); 
+        if (vexelListSave) {
+             vexelList = JSON.parse(vexelListSave); 
         } else {
-            miiList = [];
+            vexelList = [];
         }
         
-        miiList = miiList.map(mii => ({
-            ...mii,
-            isDead: mii.isDead || false,
-            relationship: mii.relationship || { status: 'single', partnerId: null, friends: [] },
-            job: mii.job || BASE_JOB, 
-            houseId: mii.houseId === undefined ? null : mii.houseId 
+        vexelList = vexelList.map(vexel => ({
+            ...vexel,
+            isDead: vexel.isDead || false,
+            relationship: vexel.relationship || { status: 'single', partnerId: null, friends: [] },
+            job: vexel.job || BASE_JOB, 
+            houseId: vexel.houseId === undefined ? null : vexel.houseId 
         }));
         
         if (!gameData.townEvents) gameData.townEvents = [];
@@ -1724,7 +1724,7 @@ function loadGame(savedData) {
     } catch (e) {
         saveMessage.textContent = "Error loading game data. Starting new town.";
         console.error("Could not parse saved data", e);
-        miiList = []; 
+        vexelList = []; 
         showCreationScreen();
     }
 }
@@ -1732,7 +1732,7 @@ function loadGame(savedData) {
 function resetGame() {
     if (confirm("Are you sure you want to delete your entire town and reset the game?")) {
         localStorage.removeItem(SAVE_KEY);
-        localStorage.removeItem('miiListSave');
+        localStorage.removeItem('vexelListSave');
         
         if (gameLoop) {
             clearInterval(gameLoop);
@@ -1749,8 +1749,8 @@ window.addEventListener('click', function(event) {
     if (event.target === storeModal && !storeModal.classList.contains('hidden')) {
         closeStore();
     }
-    if (event.target === newMiiModal && !newMiiModal.classList.contains('hidden')) {
-        closeNewMiiModal();
+    if (event.target === newVexelModal && !newVexelModal.classList.contains('hidden')) {
+        closeNewVexelModal();
     }
     if (event.target === investmentModal && !investmentModal.classList.contains('hidden')) {
         closeInvestmentModal();
@@ -1773,8 +1773,8 @@ document.addEventListener('keydown', function(event) {
     if (event.key === 'Escape') {
         if (!storeModal.classList.contains('hidden')) {
             closeStore();
-        } else if (!newMiiModal.classList.contains('hidden')) {
-            closeNewMiiModal();
+        } else if (!newVexelModal.classList.contains('hidden')) {
+            closeNewVexelModal();
         } else if (!investmentModal.classList.contains('hidden')) {
             closeInvestmentModal();
         } else if (!relationshipModal.classList.contains('hidden')) {
